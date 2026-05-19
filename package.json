@@ -1,5 +1,5 @@
 {
-  "name": "@hyperjump/json-schema-langauge-server",
+  "name": "@hyperjump/json-langauge-server",
   "version": "0.1.0",
   "description": "A language server for JSON supporting all major versions of JSON Schema",
   "keywords": [
@@ -17,15 +17,18 @@
     "Diya Srivastava <diyasrivastava@gmail.com>",
     "Matthew Adams <mwa.endjin@gmail.com>"
   ],
-  "repository": "github:hyperjump-io/json-schema-language-server",
+  "repository": "github:hyperjump-io/json-language-server",
   "funding": {
     "type": "github",
     "url": "https://github.com/sponsors/hyperjump-io"
   },
+  "type": "module",
   "devDependencies": {
     "@stylistic/eslint-plugin": "*",
+    "@types/node": "^25.9.1",
     "oxlint": "*",
     "oxlint-tsgolint": "*",
+    "typescript": "^6.0.3",
     "vitest": "*"
   }
 }
