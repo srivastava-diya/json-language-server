@@ -2,7 +2,7 @@ import { Diagnostic, DiagnosticSeverity } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import * as jsonc from "jsonc-parser";
 import { validate } from "@hyperjump/json-schema-errors";
-import { pointerSegments } from "@hyperjump/json-pointer"
+import { pointerSegments } from "@hyperjump/json-pointer";
 
 import type { ErrorObject } from "@hyperjump/json-schema-errors";
 import type { DiagnosticsProvider } from "./Diagnostics.ts";
@@ -48,12 +48,12 @@ export class SchemaValidation implements DiagnosticsProvider {
 }
 
 const findNodeByPointer = (node: jsonc.Node, pointer: string) => {
-  if(pointer === "#"){
+  if (pointer === "#") {
     return node;
   }
   const segments = [...pointerSegments(pointer.slice(1))];
-  const path = segments.map(s => /^\d+$/.test(s) ? parseInt(s) : s);
-  return jsonc.findNodeAtLocation(node, path)
+  const path = segments.map((s) => /^\d+$/.test(s) ? parseInt(s) : s);
+  return jsonc.findNodeAtLocation(node, path);
 };
 
 const formatError = (error: ErrorObject, depth = 0): string => {

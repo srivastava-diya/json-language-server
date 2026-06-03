@@ -196,7 +196,7 @@ describe("JSON Language Server", () => {
       $schema: "https://json-schema.org/draft/2020-12/schema",
       type: "object",
       properties: {
-        "foo/bar" : {type : "string"}
+        "foo/bar": { type: "string" }
       }
     };
 
