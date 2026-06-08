@@ -1,11 +1,11 @@
-import { Diagnostic, DiagnosticSeverity } from "vscode-languageserver";
+import { DiagnosticSeverity } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import * as jsonc from "jsonc-parser";
 
 import type { DiagnosticsProvider } from "./Diagnostics.ts";
 
 export class SyntaxValidation implements DiagnosticsProvider {
-  getDiagnostics(textDocument: TextDocument): Diagnostic[] {
+  async getDiagnostics(textDocument: TextDocument) {
     const text = textDocument.getText();
     const parseErrors: jsonc.ParseError[] = [];
 

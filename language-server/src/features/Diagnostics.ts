@@ -5,7 +5,7 @@ import { Server } from "../services/server.ts";
 import type { ServerCapabilities, Diagnostic } from "vscode-languageserver";
 
 export type DiagnosticsProvider = {
-  getDiagnostics(textDocument: TextDocument): Diagnostic[];
+  getDiagnostics(textDocument: TextDocument): Promise<Diagnostic[]>;
 };
 
 export class Diagnostics {
@@ -27,7 +27,7 @@ export class Diagnostics {
     documents.onDidChangeContent(async (change) => {
       const diagnostics = [];
       for (const provider of this.providers) {
-        diagnostics.push(...provider.getDiagnostics(change.document));
+        diagnostics.push(...await provider.getDiagnostics(change.document));
       }
 
       await server.sendDiagnostics({
