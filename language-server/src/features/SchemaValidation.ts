@@ -36,7 +36,7 @@ export class SchemaValidation implements DiagnosticsProvider {
                 end: textDocument.positionAt(node.offset + node.length)
               },
               message: formatError(error),
-              source: "json-language-server"
+              source: "hyperjump-json-language-server"
             });
           }
         });
@@ -54,7 +54,7 @@ const findNodeByPointer = (node: jsonc.Node, pointer: string) => {
 
   pointer = decodeURIComponent(pointer.slice(1));
   for (let segment of pointerSegments(pointer)) {
-    const key = /^\d+$/.test(segment) && node.type === "array" ? parseInt(segment) : segment;
+    const key = node.type === "array" ? parseInt(segment) : segment;
     node = jsonc.findNodeAtLocation(node, [key]) ?? node;
   }
 
