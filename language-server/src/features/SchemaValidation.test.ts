@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, test, expect, beforeAll, afterAll, afterEach, beforeEach } from "vitest";
 import { TestClient } from "../test/test-client.ts";
 import { unregisterSchema } from "@hyperjump/json-schema";
 
@@ -11,6 +11,10 @@ describe("Schema Validation", () => {
   beforeAll(async () => {
     client = new TestClient();
     await client.start();
+  });
+
+  beforeEach(() => {
+    fixtureSchemaUri = `https://example.com/person`;
   });
 
   afterAll(async () => {
