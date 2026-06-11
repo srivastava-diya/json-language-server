@@ -2,7 +2,7 @@ import { Diagnostic, DiagnosticSeverity } from "vscode-languageserver";
 import { validate } from "@hyperjump/json-schema-errors";
 import { JsonDocument } from "../models/JsonDocument.ts";
 
-import type { ErrorObject } from "@hyperjump/json-schema-errors";
+import type { ErrorObject, EvaluateInstance } from "@hyperjump/json-schema-errors";
 import type { DiagnosticsProvider } from "./Diagnostics.ts";
 
 export class SchemaValidation implements DiagnosticsProvider {
