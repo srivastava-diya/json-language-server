@@ -1,12 +1,12 @@
 import { describe, test, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { TestClient } from "../test/test-client.ts";
-import { registerSchema, unregisterSchema } from "@hyperjump/json-schema";
+import { unregisterSchema } from "@hyperjump/json-schema";
 
 import type { Diagnostic, PublishDiagnosticsParams } from "vscode-languageserver";
 
 describe("Schema Validation", () => {
   let client: TestClient;
-  const fixtureSchemaUri = "https://example.com/person";
+  let fixtureSchemaUri: string;
 
   beforeAll(async () => {
     client = new TestClient();
@@ -28,16 +28,14 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        age: { type: "number" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "number" }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
       "$schema": "${fixtureSchemaUri}",
@@ -57,16 +55,14 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        age: { type: "number" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "number" }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
       "$schema": "${fixtureSchemaUri}",
@@ -93,16 +89,14 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        age: { type: "number" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "number" }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
       "$schema": "${fixtureSchemaUri}",
@@ -122,20 +116,18 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        value: {
-          anyOf: [
-            { type: "string" },
-            { type: "number" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            { "type": "string" },
+            { "type": "number" }
           ]
         }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
       "$schema": "${fixtureSchemaUri}",
@@ -156,24 +148,22 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        value: {
-          oneOf: [
-            { type: "string" },
-            { type: "number" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "value": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" }
           ]
         }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
-    "$schema": "${fixtureSchemaUri}",
-    "value": true
+      "$schema": "${fixtureSchemaUri}",
+      "value": true
     }`);
     await client.openDocument("instance.json");
 
@@ -190,15 +180,13 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        "foo/bar": { type: "string" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "foo/bar": { "type": "string" }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
       "$schema": "${fixtureSchemaUri}",
@@ -219,15 +207,13 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        0: { type: "string" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "0": { "type": "string" }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
       "$schema": "${fixtureSchemaUri}",
@@ -247,15 +233,13 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        "foo bar": { type: "string" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "foo bar": { "type": "string" }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
       "$schema": "${fixtureSchemaUri}",
@@ -275,18 +259,16 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        42: {
-          type: "array",
-          items: { type: "number" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "42": {
+          "type": "array",
+          "items": { "type": "number" }
         }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
       "$schema": "${fixtureSchemaUri}",
@@ -306,16 +288,14 @@ describe("Schema Validation", () => {
       });
     });
 
-    const testSchema = {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        age: { type: "number" }
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "number" }
       }
-    };
-
-    registerSchema(testSchema, fixtureSchemaUri);
+    }`);
 
     await client.writeDocument("instance.json", `{
       "$schema": "${fixtureSchemaUri}",
