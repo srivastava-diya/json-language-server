@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   ConfigurationRequest,
   DidChangeConfigurationNotification,
+  DidChangeTextDocumentNotification,
   DidCloseTextDocumentNotification,
   DidOpenTextDocumentNotification,
   ExitNotification,
@@ -18,7 +19,6 @@ import { createConnection } from "vscode-languageserver/node";
 import { URI, Utils } from "vscode-uri";
 import { merge } from "merge-anything";
 import { buildServer, LanguageServerSettings } from "../build-server.js";
-import { wait } from "./test-utils.ts";
 
 import type {
   Connection,
@@ -181,7 +181,7 @@ export class TestClient {
     await this.client.sendNotification(InitializedNotification.type, {});
 
     // Wait for dynamic registrations to be completed
-    await wait(100);
+    // await wait(100);
 
     await this.changeConfiguration();
   }
@@ -213,14 +213,14 @@ export class TestClient {
     const fullUri = Utils.resolvePath(URI.parse(await this.workspaceFolder), uri);
     await writeFile(fullUri.fsPath, text, "utf-8");
 
-    return fullUri;
+    return fullUri.toString();
   }
 
   async deleteDocument(uri: string) {
     const fullUri = Utils.resolvePath(URI.parse(await this.workspaceFolder), uri);
     await rm(fileURLToPath(fullUri.fsPath));
 
-    return fullUri;
+    return fullUri.toString();
   }
 
   async openDocument(uri: string) {
@@ -238,6 +238,19 @@ export class TestClient {
     this.openDocuments.add(documentUri.toString());
 
     return documentUri;
+  }
+
+  async changeDocument(uri: string, text: string) {
+    const documentUri = Utils.resolvePath(URI.parse(await this.workspaceFolder), uri);
+    await writeFile(documentUri.fsPath, text, "utf-8");
+
+    await this.client.sendNotification(DidChangeTextDocumentNotification.type, {
+      textDocument: {
+        uri: documentUri.toString(),
+        version: 1
+      },
+      contentChanges: [{ text }]
+    });
   }
 
   async closeDocument(uri: string) {

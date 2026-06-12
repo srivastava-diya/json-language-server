@@ -1,7 +1,8 @@
 import { describe, test, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { TestClient } from "../test/test-client.ts";
 import { registerSchema, unregisterSchema } from "@hyperjump/json-schema";
-import { Diagnostic, PublishDiagnosticsParams } from "vscode-languageserver";
+
+import type { Diagnostic, PublishDiagnosticsParams } from "vscode-languageserver";
 
 describe("Schema Validation", () => {
   let client: TestClient;
@@ -83,6 +84,35 @@ describe("Schema Validation", () => {
         expect.stringMatching(/Expected a.*number/)
       ])
     );
+  });
+
+  test("schema validation is skipped if the JSON is invalid", async () => {
+    const diagnosticsPromise = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        resolve(params.diagnostics);
+      });
+    });
+
+    const testSchema = {
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        age: { type: "number" }
+      }
+    };
+
+    registerSchema(testSchema, fixtureSchemaUri);
+
+    await client.writeDocument("instance.json", `{
+      "$schema": "${fixtureSchemaUri}",
+      "name" 42,
+      "age" : "not a number"
+    }`);
+    await client.openDocument("instance.json");
+
+    const diagnostics = await diagnosticsPromise;
+    expect(diagnostics).toHaveLength(1);
   });
 
   test("JSON Validation using Hyperjump - anyOf Formatting Case", async () => {
@@ -267,5 +297,49 @@ describe("Schema Validation", () => {
     const diagnostics = await diagnosticsPromise;
     expect(diagnostics).toHaveLength(1);
     expect((diagnostics[0].message as string).replace(/[\u2068\u2069]/g, "")).toBe("Expected a number");
+  });
+
+  test("after fixing schema validation errors, it should not return a diagnostic", async () => {
+    const diagnosticsPromise1 = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        resolve(params.diagnostics);
+      });
+    });
+
+    const testSchema = {
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        age: { type: "number" }
+      }
+    };
+
+    registerSchema(testSchema, fixtureSchemaUri);
+
+    await client.writeDocument("instance.json", `{
+      "$schema": "${fixtureSchemaUri}",
+      "name": "Alice",
+      "age" : "not a number"
+    }`);
+    await client.openDocument("instance.json");
+
+    const diagnostics1 = await diagnosticsPromise1;
+    expect(diagnostics1).toHaveLength(1);
+
+    const diagnosticsPromise2 = new Promise((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params) => {
+        resolve(params.diagnostics);
+      });
+    });
+
+    await client.changeDocument("instance.json", `{
+      "$schema": "${fixtureSchemaUri}",
+      "name": "Alice",
+      "age" : 39
+    }`);
+
+    const diagnostics2 = await diagnosticsPromise2;
+    expect(diagnostics2).toHaveLength(0);
   });
 });

@@ -1,17 +1,17 @@
-import { TextDocuments, TextDocumentSyncKind } from "vscode-languageserver";
-import { TextDocument } from "vscode-languageserver-textdocument";
+import { TextDocumentSyncKind } from "vscode-languageserver";
 import { Server } from "../services/server.ts";
+import { JsonDocument } from "../models/JsonDocument.ts";
 
-import type { ServerCapabilities, Diagnostic } from "vscode-languageserver";
+import type { ServerCapabilities, Diagnostic, TextDocuments } from "vscode-languageserver";
 
 export type DiagnosticsProvider = {
-  getDiagnostics(textDocument: TextDocument): Promise<Diagnostic[]>;
+  getDiagnostics(jsonDocument: JsonDocument): Promise<Diagnostic[]>;
 };
 
 export class Diagnostics {
   private providers: DiagnosticsProvider[];
 
-  constructor(server: Server, documents: TextDocuments<TextDocument>, providers: DiagnosticsProvider[]) {
+  constructor(server: Server, documents: TextDocuments<JsonDocument>, providers: DiagnosticsProvider[]) {
     this.providers = providers;
 
     server.onInitialize(() => {
