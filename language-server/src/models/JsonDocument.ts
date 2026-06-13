@@ -1,4 +1,4 @@
-import { DocumentUri, TextDocumentContentChangeEvent } from "vscode-languageserver";
+import { TextDocumentContentChangeEvent } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import * as jsonc from "jsonc-parser";
 import { pointerSegments } from "@hyperjump/json-pointer";
@@ -60,18 +60,6 @@ export class JsonDocument implements TextDocument {
     }
 
     return findNodeByPointer(this.ast, pointer);
-  }
-}
-
-export namespace JsonDocument {
-  export function create(uri: DocumentUri, languageId: string, version: number, content: string) {
-    const textDocument = TextDocument.create(uri, languageId, version, content);
-    return new JsonDocument(textDocument);
-  }
-
-  export function update(document: JsonDocument, changes: TextDocumentContentChangeEvent[], version: number) {
-    document.update(changes, version);
-    return document;
   }
 }
 

@@ -1,8 +1,8 @@
-import { TextDocumentSyncKind } from "vscode-languageserver";
 import { Server } from "../services/server.ts";
+import { JsonDocuments } from "../services/JsonDocuments.ts";
 import { JsonDocument } from "../models/JsonDocument.ts";
 
-import type { ServerCapabilities, Diagnostic, TextDocuments } from "vscode-languageserver";
+import type { Diagnostic } from "vscode-languageserver";
 
 export type DiagnosticsProvider = {
   getDiagnostics(jsonDocument: JsonDocument): Promise<Diagnostic[]>;
@@ -11,18 +11,8 @@ export type DiagnosticsProvider = {
 export class Diagnostics {
   private providers: DiagnosticsProvider[];
 
-  constructor(server: Server, documents: TextDocuments<JsonDocument>, providers: DiagnosticsProvider[]) {
+  constructor(server: Server, documents: JsonDocuments, providers: DiagnosticsProvider[]) {
     this.providers = providers;
-
-    server.onInitialize(() => {
-      const serverCapabilities: ServerCapabilities = {
-        textDocumentSync: TextDocumentSyncKind.Incremental
-      };
-
-      return {
-        capabilities: serverCapabilities
-      };
-    });
 
     documents.onDidChangeContent(async (change) => {
       const diagnostics = [];

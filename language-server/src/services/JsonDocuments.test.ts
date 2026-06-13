@@ -1,8 +1,8 @@
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
 import { TextDocumentSyncKind } from "vscode-languageserver";
-import { TestClient } from "./test/test-client.ts";
+import { TestClient } from "../test/test-client.ts";
 
-describe("JSON Language Server", () => {
+describe("JsonDocuments", () => {
   let client: TestClient;
 
   beforeAll(async () => {

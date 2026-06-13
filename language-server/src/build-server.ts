@@ -1,7 +1,5 @@
-import { TextDocuments } from "vscode-languageserver";
-
 import { Server } from "./services/server.ts";
-import { JsonDocument } from "./models/JsonDocument.ts";
+import { JsonDocuments } from "./services/JsonDocuments.ts";
 import { Diagnostics } from "./features/Diagnostics.ts";
 import { SyntaxValidation } from "./features/SyntaxValidation.ts";
 import { SchemaValidation } from "./features/SchemaValidation.ts";
@@ -20,7 +18,7 @@ export type LanguageServerSettings = {
 export const buildServer = (connection: Connection): Connection => {
   const server = new Server(connection);
 
-  const documents = new TextDocuments(JsonDocument);
+  const documents = new JsonDocuments(server);
   documents.listen(server);
 
   new Diagnostics(server, documents, [
