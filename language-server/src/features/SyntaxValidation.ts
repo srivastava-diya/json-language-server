@@ -1,21 +1,16 @@
 import { DiagnosticSeverity } from "vscode-languageserver";
-import { TextDocument } from "vscode-languageserver-textdocument";
 import * as jsonc from "jsonc-parser";
 
 import type { DiagnosticsProvider } from "./Diagnostics.ts";
+import { JsonDocument } from "../models/JsonDocument.ts";
 
 export class SyntaxValidation implements DiagnosticsProvider {
-  async getDiagnostics(textDocument: TextDocument) {
-    const text = textDocument.getText();
-    const parseErrors: jsonc.ParseError[] = [];
-
-    jsonc.parseTree(text, parseErrors);
-
-    return parseErrors.map((error) => ({
+  async getDiagnostics(jsonDocument: JsonDocument) {
+    return jsonDocument.getParseErrors().map((error) => ({
       severity: DiagnosticSeverity.Error,
       range: {
-        start: textDocument.positionAt(error.offset),
-        end: textDocument.positionAt(error.offset + error.length)
+        start: jsonDocument.positionAt(error.offset),
+        end: jsonDocument.positionAt(error.offset + error.length)
       },
       message: jsonc.printParseErrorCode(error.error),
       source: "hyperjump-json-language-server"

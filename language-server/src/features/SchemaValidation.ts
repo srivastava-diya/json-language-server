@@ -1,65 +1,50 @@
 import { Diagnostic, DiagnosticSeverity } from "vscode-languageserver";
-import { TextDocument } from "vscode-languageserver-textdocument";
-import * as jsonc from "jsonc-parser";
 import { validate } from "@hyperjump/json-schema-errors";
-import { pointerSegments } from "@hyperjump/json-pointer";
+import { JsonDocument } from "../models/JsonDocument.ts";
 
 import type { ErrorObject } from "@hyperjump/json-schema-errors";
 import type { DiagnosticsProvider } from "./Diagnostics.ts";
 
 export class SchemaValidation implements DiagnosticsProvider {
-  async getDiagnostics(textDocument: TextDocument) {
-    const text = textDocument.getText();
-    const parseErrors: jsonc.ParseError[] = [];
-
-    const tree = jsonc.parseTree(text, parseErrors);
+  async getDiagnostics(jsonDocument: JsonDocument) {
     const schemaDiagnostics: Diagnostic[] = [];
 
-    const schemaNode = tree ? jsonc.findNodeAtLocation(tree, ["$schema"]) : undefined;
+    const schemaNode = jsonDocument.findNodeAtPointer("/$schema");
     const schemaUri = schemaNode?.value;
 
     // skip schema validation if there are syntax errors hence the parseError.length check
-    if (schemaUri && parseErrors.length === 0) {
-      let instance = JSON.parse(text);
-      const result = await validate(schemaUri, instance);
+    if (schemaUri && jsonDocument.getParseErrors().length === 0) {
+      let instance = JSON.parse(jsonDocument.getText());
+      try {
+        const result = await validate(schemaUri, instance);
 
-      if (!result.valid) {
-        const errors = result.errors;
-        errors.forEach((error) => {
-          const node = tree ? findNodeByPointer(tree, error.instanceLocation) : undefined;
+        if (!result.valid) {
+          const errors = result.errors;
+          errors.forEach((error) => {
+            const pointer = decodeURIComponent(error.instanceLocation.slice(1));
+            const node = jsonDocument.findNodeAtPointer(pointer);
 
-          if (node) {
-            schemaDiagnostics.push({
-              severity: DiagnosticSeverity.Error,
-              range: {
-                start: textDocument.positionAt(node.offset),
-                end: textDocument.positionAt(node.offset + node.length)
-              },
-              message: formatError(error),
-              source: "hyperjump-json-language-server"
-            });
-          }
-        });
+            if (node) {
+              schemaDiagnostics.push({
+                severity: DiagnosticSeverity.Error,
+                range: {
+                  start: jsonDocument.positionAt(node.offset),
+                  end: jsonDocument.positionAt(node.offset + node.length)
+                },
+                message: formatError(error),
+                source: "hyperjump-json-language-server"
+              });
+            }
+          });
+        }
+      } catch (error: unknown) {
+        // TODO: Handle invalid or missing schema errors
       }
     }
 
     return schemaDiagnostics;
   }
 }
-
-const findNodeByPointer = (node: jsonc.Node, pointer: string) => {
-  if (pointer === "#") {
-    return node;
-  }
-
-  pointer = decodeURIComponent(pointer.slice(1));
-  for (let segment of pointerSegments(pointer)) {
-    const key = node.type === "array" ? parseInt(segment) : segment;
-    node = jsonc.findNodeAtLocation(node, [key]) ?? node;
-  }
-
-  return node;
-};
 
 const formatError = (error: ErrorObject, depth = 0): string => {
   let message = error.message;
