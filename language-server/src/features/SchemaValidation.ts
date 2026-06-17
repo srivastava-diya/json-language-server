@@ -1,56 +1,34 @@
 import { Diagnostic, DiagnosticSeverity } from "vscode-languageserver";
 import { JsonDocument } from "../models/JsonDocument.ts";
-import { SchemaValidatorCache } from "../services/schemaValidatorCache.ts";
 
-import type { ErrorObject, EvaluateInstance } from "@hyperjump/json-schema-errors";
+import type { ErrorObject } from "@hyperjump/json-schema-errors";
 import type { DiagnosticsProvider } from "./Diagnostics.ts";
 
 export class SchemaValidation implements DiagnosticsProvider {
-  private validatorCache = new SchemaValidatorCache();
-
-  clearCache(document: JsonDocument) {
-    this.validatorCache.clear(document);
-  }
-
   async getDiagnostics(jsonDocument: JsonDocument) {
     const schemaDiagnostics: Diagnostic[] = [];
 
-    const schemaNode = jsonDocument.findNodeAtPointer("/$schema");
-    const schemaUri = schemaNode?.value;
+    const result = await jsonDocument.getSchemaErrors();
 
-    if (schemaUri && jsonDocument.getParseErrors().length === 0) {
-      let instance = JSON.parse(jsonDocument.getText());
-      try {
-        const compiledValidator = await this.validatorCache.getValidator(schemaUri);
+    if (result?.valid === false) {
+      const errors = result.errors;
+      errors.forEach((error) => {
+        const pointer = decodeURIComponent(error.instanceLocation.slice(1));
+        const node = jsonDocument.findNodeAtPointer(pointer);
 
-        if (compiledValidator) {
-          const result = compiledValidator(instance);
-
-          if (!result.valid) {
-            const errors = result.errors;
-            errors.forEach((error) => {
-              const pointer = decodeURIComponent(error.instanceLocation.slice(1));
-              const node = jsonDocument.findNodeAtPointer(pointer);
-
-              if (node) {
-                schemaDiagnostics.push({
-                  severity: DiagnosticSeverity.Error,
-                  range: {
-                    start: jsonDocument.positionAt(node.offset),
-                    end: jsonDocument.positionAt(node.offset + node.length)
-                  },
-                  message: formatError(error),
-                  source: "hyperjump-json-language-server"
-                });
-              }
-            });
-          }
+        if (node) {
+          schemaDiagnostics.push({
+            severity: DiagnosticSeverity.Error,
+            range: {
+              start: jsonDocument.positionAt(node.offset),
+              end: jsonDocument.positionAt(node.offset + node.length)
+            },
+            message: formatError(error),
+            source: "hyperjump-json-language-server"
+          });
         }
-      } catch (_error: unknown) {
-        // TODO: Handle invalid or missing schema errors
-      }
+      });
     }
-
     return schemaDiagnostics;
   }
 }

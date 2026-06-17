@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, afterAll, afterEach, beforeEach } from "vitest";
+import { describe, test, expect, afterEach, beforeEach } from "vitest";
 import { TestClient } from "../test/test-client.ts";
 import { unregisterSchema } from "@hyperjump/json-schema";
 
@@ -8,16 +8,12 @@ describe("Schema Validation", () => {
   let client: TestClient;
   let fixtureSchemaUri: string;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     client = new TestClient();
     await client.start();
   });
 
-  beforeEach(() => {
-    fixtureSchemaUri = `https://example.com/person`;
-  });
-
-  afterAll(async () => {
+  afterEach(async () => {
     await client.stop();
   });
 
@@ -321,6 +317,53 @@ describe("Schema Validation", () => {
       "$schema": "${fixtureSchemaUri}",
       "name": "Alice",
       "age" : 39
+    }`);
+
+    const diagnostics2 = await diagnosticsPromise2;
+    expect(diagnostics2).toHaveLength(0);
+  });
+
+  test.skip("changing the schema should invalidate the cache", async () => {
+    const diagnosticsPromise1 = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        resolve(params.diagnostics);
+      });
+    });
+
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "number" }
+      }
+    }`);
+
+    await client.writeDocument("instance.json", `{
+      "$schema": "${fixtureSchemaUri}",
+      "name": "Alice",
+      "age" : "not a number"
+    }`);
+    const instanceUri = await client.openDocument("instance.json");
+
+    const diagnostics1 = await diagnosticsPromise1;
+    expect(diagnostics1).toHaveLength(1);
+
+    const diagnosticsPromise2 = new Promise((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params) => {
+        if (params.uri === instanceUri) {
+          resolve(params.diagnostics);
+        }
+      });
+    });
+
+    fixtureSchemaUri = await client.changeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "string" }
+      }
     }`);
 
     const diagnostics2 = await diagnosticsPromise2;

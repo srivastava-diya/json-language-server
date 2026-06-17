@@ -2,18 +2,44 @@ import { TextDocumentContentChangeEvent } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import * as jsonc from "jsonc-parser";
 import { pointerSegments } from "@hyperjump/json-pointer";
+import { SchemaStore } from "../services/SchemaStore.ts";
 
 import type { Position, Range } from "vscode-languageserver-textdocument";
+import type { ValidationResult } from "@hyperjump/json-schema-errors";
 
 export class JsonDocument implements TextDocument {
   private textDocument: TextDocument;
+  private schemaStore: SchemaStore;
   private ast: jsonc.Node | undefined;
   private parseErrors: jsonc.ParseError[] = [];
+  private schemaErrors: Promise<ValidationResult> | undefined;
 
-  constructor(textDocument: TextDocument) {
+  constructor(textDocument: TextDocument, schemaStore: SchemaStore) {
     this.textDocument = textDocument;
+    this.schemaStore = schemaStore;
 
+    this.validate();
+  }
+
+  private validate() {
+    this.parseErrors = [];
     this.ast = jsonc.parseTree(this.textDocument.getText(), this.parseErrors);
+
+    if (this.parseErrors.length > 0) {
+      return;
+    }
+
+    const schemaNode = this.findNodeAtPointer("/$schema");
+    const schemaUri = schemaNode?.value;
+
+    if (schemaUri === undefined) {
+      return;
+    }
+
+    this.schemaStore.clear(schemaUri);
+
+    let instance = JSON.parse(this.getText());
+    this.schemaErrors = this.schemaStore.validate(schemaUri, instance);
   }
 
   get uri() {
@@ -46,12 +72,15 @@ export class JsonDocument implements TextDocument {
 
   update(changes: TextDocumentContentChangeEvent[], version: number): void {
     TextDocument.update(this.textDocument, changes, version);
-    this.parseErrors = [];
-    this.ast = jsonc.parseTree(this.textDocument.getText(), this.parseErrors);
+    this.validate();
   }
 
   getParseErrors() {
     return this.parseErrors;
+  }
+
+  getSchemaErrors() {
+    return this.schemaErrors;
   }
 
   findNodeAtPointer(pointer: string) {

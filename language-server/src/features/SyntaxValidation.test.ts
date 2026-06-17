@@ -1,15 +1,15 @@
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
+import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { TestClient } from "../test/test-client.ts";
 
 describe("Syntax Validation", () => {
   let client: TestClient;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     client = new TestClient();
     await client.start();
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await client.stop();
   });
 
