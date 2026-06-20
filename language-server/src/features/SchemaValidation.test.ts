@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach, beforeEach } from "vitest";
+﻿import { describe, test, expect, afterEach, beforeEach } from "vitest";
 import { TestClient } from "../test/test-client.ts";
 import { unregisterSchema } from "@hyperjump/json-schema";
 
@@ -368,5 +368,77 @@ describe("Schema Validation", () => {
 
     const diagnostics2 = await diagnosticsPromise2;
     expect(diagnostics2).toHaveLength(0);
+  });
+
+  test("changing a referenced schema revalidates dependents", async () => {
+    const diagnosticsPromise1 = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        resolve(params.diagnostics);
+      });
+    });
+
+    const referencedSchema = await client.writeDocument("B.schema.json", `{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "number"
+    }`);
+
+    fixtureSchemaUri = await client.writeDocument("A.schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "age": { "$ref": "${referencedSchema}" }
+      }
+    }`);
+
+    await client.writeDocument("instance.json", `{
+    "$schema": "${fixtureSchemaUri}",
+    "age": "not a number"
+    }`);
+    const instanceUri = await client.openDocument("instance.json");
+
+    const diagnostics1 = await diagnosticsPromise1;
+    expect(diagnostics1).toHaveLength(1);
+
+    const diagnosticsPromise2 = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params) => {
+        if (params.uri === instanceUri) {
+          resolve(params.diagnostics);
+        }
+      });
+    });
+
+    await client.writeDocument("B.schema.json", `{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "string"
+    }`);
+
+    const diagnostics2 = await diagnosticsPromise2;
+    expect(diagnostics2).toHaveLength(0);
+  });
+
+  test("changing a watched file should not revalidate documents with no $schema", async () => {
+    const DiagnosticsPromise = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        resolve(params.diagnostics);
+      });
+    });
+
+    await client.writeDocument("plain.json", `{ "foo": "bar" }`);
+    const plainUri = await client.openDocument("plain.json");
+    await DiagnosticsPromise;
+
+    let revalidated = false;
+    client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+      if (params.uri === plainUri) {
+        revalidated = true;
+      }
+    });
+
+    fixtureSchemaUri = await client.writeDocument("unrelated.schema.json", `{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object"
+    }`);
+
+    expect(revalidated).toBe(false);
   });
 });
