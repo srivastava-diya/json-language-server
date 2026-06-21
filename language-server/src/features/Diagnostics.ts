@@ -3,7 +3,6 @@ import { JsonDocuments } from "../services/JsonDocuments.ts";
 import { JsonDocument } from "../models/JsonDocument.ts";
 
 import type { Diagnostic } from "vscode-languageserver";
-import type { SchemaStore } from "../services/SchemaStore.ts";
 
 export type DiagnosticsProvider = {
   getDiagnostics(jsonDocument: JsonDocument): Promise<Diagnostic[]>;
@@ -13,7 +12,7 @@ export class Diagnostics {
   private server: Server;
   private providers: DiagnosticsProvider[];
 
-  constructor(server: Server, documents: JsonDocuments, schemaStore: SchemaStore, providers: DiagnosticsProvider[]) {
+  constructor(server: Server, documents: JsonDocuments, providers: DiagnosticsProvider[]) {
     this.server = server;
     this.providers = providers;
 
@@ -22,25 +21,21 @@ export class Diagnostics {
     });
 
     server.onDidChangeWatchedFiles(async (params) => {
-      const changedUris = new Set(params.changes.map((change) => decodeURIComponent(change.uri)));
+      const changedUris = new Set<string>();
+      for (const change of params.changes) {
+        changedUris.add(decodeURIComponent(change.uri));
+      }
 
       for (const document of documents.all()) {
-        const schemaUri = document.getSchemaUri();
-
-        if (schemaUri === undefined) {
-          continue;
-        }
-        const dependentSchemaUris = schemaStore.getDependentSchemaUris(schemaUri);
-
-        if (dependentSchemaUris === undefined || [...changedUris].some((uri) => dependentSchemaUris.has(uri))) {
-          document.revalidate();
+        if (document.dependsOn(changedUris)) {
+          document.validateSchema();
           await this.sendDiagnostics(document);
         }
       }
     });
   }
 
-  async sendDiagnostics(document: JsonDocument) {
+  private async sendDiagnostics(document: JsonDocument) {
     const diagnostics = [];
     for (const provider of this.providers) {
       diagnostics.push(...await provider.getDiagnostics(document));

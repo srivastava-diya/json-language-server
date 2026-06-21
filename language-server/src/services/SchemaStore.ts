@@ -1,6 +1,5 @@
 import { compile, getSchema } from "@hyperjump/json-schema/experimental";
 import { evaluateCompiledSchema } from "@hyperjump/json-schema-errors";
-import { unregisterSchema } from "@hyperjump/json-schema";
 
 import type { CompiledSchema } from "@hyperjump/json-schema/experimental";
 import type { Json, ValidationResult } from "@hyperjump/json-schema-errors";
@@ -15,13 +14,21 @@ export class SchemaStore {
     });
 
     server.onDidChangeWatchedFiles((params) => {
-      const changedUris = new Set(params.changes.map((change) => decodeURIComponent(change.uri)));
+      const changedUris = new Set<string>();
+      for (const change of params.changes) {
+        changedUris.add(decodeURIComponent(change.uri));
+      }
 
-      const toClear = [...this.compiledSchemaCache.keys()].filter((schemaUri) => {
-        const dependentSchemas = this.getDepsFromCompiledSchema(this.compiledSchemaCache.get(schemaUri)!);
-
-        return [...changedUris].some((uri) => dependentSchemas.has(uri));
-      });
+      const toClear: string[] = [];
+      for (const [schemaUri, compiledSchema] of this.compiledSchemaCache.entries()) {
+        const dependentSchemas = this.getDepsFromCompiledSchema(compiledSchema);
+        for (const uri of changedUris) {
+          if (dependentSchemas.has(uri)) {
+            toClear.push(schemaUri);
+            break;
+          }
+        }
+      }
 
       for (const schemaUri of toClear) {
         this.clear(schemaUri);
@@ -54,18 +61,17 @@ export class SchemaStore {
   }
 
   clear(schemaUri: string) {
-    unregisterSchema(schemaUri);
     this.compiledSchemaCache.delete(schemaUri);
     // TODO: Unregister schemas under $id and id
   }
 
   private getDepsFromCompiledSchema(compiledSchema: CompiledSchema): Set<string> {
-    return new Set(
-      Object.keys(compiledSchema.ast)
-        .filter((key) => key !== "metaData")
-        .filter((key) => key !== "plugins")
-        .map((key) => key.split("#")[0])
-        .filter((uri) => uri !== "")
-    );
+    const deps = new Set<string>();
+    for (const key of Object.keys(compiledSchema.ast)) {
+      if (key !== "metaData" && key !== "plugins") {
+        deps.add(key.split("#")[0]);
+      }
+    }
+    return deps;
   }
 }

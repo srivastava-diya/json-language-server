@@ -23,7 +23,7 @@ export const buildServer = (connection: Connection): Connection => {
   const documents = new JsonDocuments(server, schemaStore);
   documents.listen(server);
 
-  new Diagnostics(server, documents, schemaStore, [
+  new Diagnostics(server, documents, [
     new SyntaxValidation(),
     new SchemaValidation()
   ]);

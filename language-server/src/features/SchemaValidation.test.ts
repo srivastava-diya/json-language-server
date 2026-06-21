@@ -1,4 +1,4 @@
-﻿import { describe, test, expect, afterEach, beforeEach } from "vitest";
+import { describe, test, expect, afterEach, beforeEach } from "vitest";
 import { TestClient } from "../test/test-client.ts";
 import { unregisterSchema } from "@hyperjump/json-schema";
 
@@ -414,6 +414,32 @@ describe("Schema Validation", () => {
 
     const diagnostics2 = await diagnosticsPromise2;
     expect(diagnostics2).toHaveLength(0);
+  });
+
+  test("JSON Validation using Hyperjump - Relative $schema case", async () => {
+    const diagnosticsPromise = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        resolve(params.diagnostics);
+      });
+    });
+
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      }
+    }`);
+
+    await client.writeDocument("instance.json", `{
+      "$schema": "schema.json",
+      "name": 1234
+    }`);
+    await client.openDocument("instance.json");
+
+    const diagnostics = await diagnosticsPromise;
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0].message).toMatch(/Expected a.*string/);
   });
 
   test("changing a watched file should not revalidate documents with no $schema", async () => {

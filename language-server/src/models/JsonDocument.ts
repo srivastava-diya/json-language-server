@@ -13,6 +13,7 @@ export class JsonDocument implements TextDocument {
   private ast: jsonc.Node | undefined;
   private parseErrors: jsonc.ParseError[] = [];
   private schemaErrors: Promise<ValidationResult> | undefined;
+  private schemaUri: string | undefined;
 
   constructor(textDocument: TextDocument, schemaStore: SchemaStore) {
     this.textDocument = textDocument;
@@ -29,15 +30,18 @@ export class JsonDocument implements TextDocument {
       return;
     }
 
-    const schemaNode = this.findNodeAtPointer("/$schema");
-    const schemaUri = schemaNode?.value;
-
-    if (schemaUri === undefined) {
-      return;
+    const rawSchemaUri = this.findNodeAtPointer("/$schema")?.value as string | undefined;
+    if (rawSchemaUri !== undefined) {
+      try {
+        this.schemaUri = new URL(rawSchemaUri, this.uri).toString();
+      } catch {
+        this.schemaUri = rawSchemaUri;
+      }
+    } else {
+      this.schemaUri = undefined;
     }
 
-    let instance = JSON.parse(this.getText());
-    this.schemaErrors = this.schemaStore.validate(schemaUri, instance);
+    this.validateSchema();
   }
 
   get uri() {
@@ -73,8 +77,15 @@ export class JsonDocument implements TextDocument {
     this.validate();
   }
 
-  revalidate() {
-    this.validate();
+  validateSchema() {
+    this.schemaErrors = undefined;
+
+    if (this.schemaUri === undefined) {
+      return;
+    }
+
+    const instance = JSON.parse(this.getText());
+    this.schemaErrors = this.schemaStore.validate(this.schemaUri, instance);
   }
 
   getParseErrors() {
@@ -86,8 +97,27 @@ export class JsonDocument implements TextDocument {
   }
 
   getSchemaUri() {
-    const schemaNode = this.findNodeAtPointer("/$schema");
-    return schemaNode?.value as string | undefined;
+    return this.schemaUri;
+  }
+
+  dependsOn(changedUris: Set<string>): boolean {
+    if (this.schemaUri === undefined) {
+      return false;
+    }
+
+    const dependentSchemaUris = this.schemaStore.getDependentSchemaUris(this.schemaUri);
+
+    if (dependentSchemaUris === undefined) {
+      return true;
+    }
+
+    for (const uri of changedUris) {
+      if (dependentSchemaUris.has(uri)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   findNodeAtPointer(pointer: string) {

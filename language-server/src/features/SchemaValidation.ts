@@ -9,25 +9,28 @@ export class SchemaValidation implements DiagnosticsProvider {
     const schemaDiagnostics: Diagnostic[] = [];
 
     const result = await jsonDocument.getSchemaErrors();
+    try {
+      if (result?.valid === false) {
+        const errors = result.errors;
+        errors.forEach((error) => {
+          const pointer = decodeURIComponent(error.instanceLocation.slice(1));
+          const node = jsonDocument.findNodeAtPointer(pointer);
 
-    if (result?.valid === false) {
-      const errors = result.errors;
-      errors.forEach((error) => {
-        const pointer = decodeURIComponent(error.instanceLocation.slice(1));
-        const node = jsonDocument.findNodeAtPointer(pointer);
-
-        if (node) {
-          schemaDiagnostics.push({
-            severity: DiagnosticSeverity.Error,
-            range: {
-              start: jsonDocument.positionAt(node.offset),
-              end: jsonDocument.positionAt(node.offset + node.length)
-            },
-            message: formatError(error),
-            source: "hyperjump-json-language-server"
-          });
-        }
-      });
+          if (node) {
+            schemaDiagnostics.push({
+              severity: DiagnosticSeverity.Error,
+              range: {
+                start: jsonDocument.positionAt(node.offset),
+                end: jsonDocument.positionAt(node.offset + node.length)
+              },
+              message: formatError(error),
+              source: "hyperjump-json-language-server"
+            });
+          }
+        });
+      }
+    } catch (_error: unknown) {
+      // TODO: Handle invalid or missing schema errors
     }
     return schemaDiagnostics;
   }
