@@ -2,7 +2,7 @@ import { TextDocumentContentChangeEvent } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import * as jsonc from "jsonc-parser";
 import { pointerSegments } from "@hyperjump/json-pointer";
-import { normalizeIri } from "@hyperjump/uri";
+import { resolveIri } from "@hyperjump/uri";
 import { SchemaStore } from "../services/SchemaStore.ts";
 
 import type { Position, Range } from "vscode-languageserver-textdocument";
@@ -34,9 +34,9 @@ export class JsonDocument implements TextDocument {
     const rawSchemaUri = this.findNodeAtPointer("/$schema")?.value as string | undefined;
     if (rawSchemaUri !== undefined) {
       try {
-        this.schemaUri = normalizeIri(new URL(rawSchemaUri, this.uri).toString());
+        this.schemaUri = resolveIri(rawSchemaUri, this.uri);
       } catch {
-        this.schemaUri = normalizeIri(rawSchemaUri);
+        this.schemaUri = rawSchemaUri;
       }
     } else {
       this.schemaUri = undefined;

@@ -8,8 +8,9 @@ export class SchemaValidation implements DiagnosticsProvider {
   async getDiagnostics(jsonDocument: JsonDocument) {
     const schemaDiagnostics: Diagnostic[] = [];
 
-    const result = await jsonDocument.getSchemaErrors();
     try {
+      const result = await jsonDocument.getSchemaErrors();
+
       if (result?.valid === false) {
         const errors = result.errors;
         errors.forEach((error) => {
