@@ -461,10 +461,132 @@ describe("Schema Validation", () => {
     });
 
     fixtureSchemaUri = await client.writeDocument("unrelated.schema.json", `{
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "type": "object"
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object"
     }`);
 
     expect(revalidated).toBe(false);
+  });
+
+  test("A JSON syntax error should reset the schema errors", async () => {
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      }
+    }`);
+
+    const instanceUri = await client.writeDocument("instance.json", `{
+      "$schema": "${fixtureSchemaUri}",
+      "name": 42
+    }`);
+
+    // Inital validation has a schema error
+    const initialValidation = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        if (params.uri === instanceUri) {
+          resolve(params.diagnostics);
+        }
+      });
+    });
+    await client.openDocument("instance.json");
+    await expect(initialValidation).resolves.to.toHaveLength(1);
+
+    // Introduce syntax error
+    const secondValidation = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        if (params.uri === instanceUri) {
+          resolve(params.diagnostics);
+        }
+      });
+    });
+    await client.changeDocument("instance.json", `{
+      "$schema": "${fixtureSchemaUri}",
+      "foo" "bar"
+    }`);
+    await expect(secondValidation).resolves.to.toHaveLength(1);
+  });
+
+  test("Removing $schema should reset schema errors", async () => {
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      }
+    }`);
+
+    const instanceUri = await client.writeDocument("instance.json", `{
+      "$schema": "${fixtureSchemaUri}",
+      "name": 42
+    }`);
+
+    // Inital validation has a schema error
+    const initialValidation = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        if (params.uri === instanceUri) {
+          resolve(params.diagnostics);
+        }
+      });
+    });
+    await client.openDocument("instance.json");
+    await expect(initialValidation).resolves.to.toHaveLength(1);
+
+    // Remove $schema
+    const secondValidation = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        if (params.uri === instanceUri) {
+          resolve(params.diagnostics);
+        }
+      });
+    });
+    await client.changeDocument("instance.json", `{
+      "foo": "bar"
+    }`);
+    await expect(secondValidation).resolves.to.toHaveLength(0);
+  });
+
+  test("Introducing a schema error should reset schemas errors for dependent instances", async () => {
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      }
+    }`);
+
+    const instanceUri = await client.writeDocument("instance.json", `{
+      "$schema": "${fixtureSchemaUri}",
+      "name": 42
+    }`);
+
+    // Inital validation has a schema error
+    const initialValidation = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        if (params.uri === instanceUri) {
+          resolve(params.diagnostics);
+        }
+      });
+    });
+    await client.openDocument("instance.json");
+    await expect(initialValidation).resolves.to.toHaveLength(1);
+
+    // Introducing a schema error should reset schema errors on dependent instances
+    const secondValidation = new Promise<Diagnostic[]>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+        if (params.uri === instanceUri) {
+          resolve(params.diagnostics);
+        }
+      });
+    });
+    await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "invalid-type" }
+      }
+    }`);
+    await expect(secondValidation).resolves.to.toHaveLength(0);
   });
 });
