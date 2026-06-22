@@ -1,6 +1,7 @@
 import { Server } from "../services/server.ts";
 import { JsonDocuments } from "../services/JsonDocuments.ts";
 import { JsonDocument } from "../models/JsonDocument.ts";
+import { normalizeIri } from "@hyperjump/uri";
 
 import type { Diagnostic } from "vscode-languageserver";
 
@@ -23,7 +24,7 @@ export class Diagnostics {
     server.onDidChangeWatchedFiles(async (params) => {
       const changedUris = new Set<string>();
       for (const change of params.changes) {
-        changedUris.add(decodeURIComponent(change.uri));
+        changedUris.add(normalizeIri(change.uri));
       }
 
       for (const document of documents.all()) {

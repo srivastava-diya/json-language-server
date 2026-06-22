@@ -1,5 +1,6 @@
 import { compile, getSchema } from "@hyperjump/json-schema/experimental";
 import { evaluateCompiledSchema } from "@hyperjump/json-schema-errors";
+import { normalizeIri } from "@hyperjump/uri";
 
 import type { CompiledSchema } from "@hyperjump/json-schema/experimental";
 import type { Json, ValidationResult } from "@hyperjump/json-schema-errors";
@@ -16,7 +17,7 @@ export class SchemaStore {
     server.onDidChangeWatchedFiles((params) => {
       const changedUris = new Set<string>();
       for (const change of params.changes) {
-        changedUris.add(decodeURIComponent(change.uri));
+        changedUris.add(normalizeIri(change.uri));
       }
 
       const toClear: string[] = [];
