@@ -20,19 +20,14 @@ export class SchemaStore {
         changedUris.add(normalizeIri(change.uri));
       }
 
-      const toClear: string[] = [];
       for (const [schemaUri, compiledSchema] of this.compiledSchemaCache.entries()) {
         const dependentSchemas = this.getDepsFromCompiledSchema(compiledSchema);
         for (const uri of changedUris) {
           if (dependentSchemas.has(uri)) {
-            toClear.push(schemaUri);
+            this.clear(schemaUri);
             break;
           }
         }
-      }
-
-      for (const schemaUri of toClear) {
-        this.clear(schemaUri);
       }
     });
   }
