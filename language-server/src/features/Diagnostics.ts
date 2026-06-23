@@ -11,27 +11,22 @@ export type DiagnosticsProvider = {
 
 export class Diagnostics {
   private server: Server;
+  private jsonDocuments: JsonDocuments;
   private providers: DiagnosticsProvider[];
 
-  constructor(server: Server, documents: JsonDocuments, providers: DiagnosticsProvider[]) {
+  constructor(server: Server, jsonDocuments: JsonDocuments, providers: DiagnosticsProvider[]) {
     this.server = server;
+    this.jsonDocuments = jsonDocuments;
     this.providers = providers;
 
-    documents.onDidChangeContent(async (change) => {
+    jsonDocuments.onDidChangeContent(async (change) => {
       await this.sendDiagnostics(change.document);
     });
 
     server.onDidChangeWatchedFiles(async (params) => {
-      const changedUris = new Set<string>();
       for (const change of params.changes) {
-        changedUris.add(normalizeIri(change.uri));
-      }
-
-      for (const document of documents.all()) {
-        if (document.dependsOn(changedUris)) {
-          document.validateSchema();
-          await this.sendDiagnostics(document);
-        }
+        const changedUri = normalizeIri(change.uri);
+        await this.revalidateDependentDocuments(changedUri);
       }
     });
   }
@@ -46,5 +41,14 @@ export class Diagnostics {
       uri: document.uri,
       diagnostics: diagnostics
     });
+  }
+
+  private async revalidateDependentDocuments(schemaUri: string) {
+    for (const jsonDocument of this.jsonDocuments.all()) {
+      if (jsonDocument.dependsOn(schemaUri)) {
+        jsonDocument.validateSchema();
+        await this.sendDiagnostics(jsonDocument);
+      }
+    }
   }
 }

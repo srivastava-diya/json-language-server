@@ -25,27 +25,44 @@ export class JsonDocument implements TextDocument {
 
   private validate() {
     this.parseErrors = [];
+    this.schemaErrors = undefined;
+    this.schemaUri = undefined;
+
     this.ast = jsonc.parseTree(this.textDocument.getText(), this.parseErrors);
 
     if (this.parseErrors.length > 0) {
-      this.schemaErrors = undefined;
       return;
     }
 
-    const rawSchemaUri = this.findNodeAtPointer("/$schema")?.value as string | undefined;
-    if (rawSchemaUri !== undefined) {
+    const schemaNode = this.findNodeAtPointer("/$schema");
+    if (schemaNode) {
       try {
-        this.schemaUri = resolveIri(rawSchemaUri, this.uri);
+        this.schemaUri = resolveIri(schemaNode.value, this.uri);
       } catch {
-        this.schemaUri = rawSchemaUri;
+        this.schemaUri = schemaNode.value;
       }
-    } else {
-      this.schemaUri = undefined;
-      this.schemaErrors = undefined;
+
+      this.validateSchema();
+    }
+  }
+
+  validateSchema() {
+    if (this.schemaUri === undefined) {
       return;
     }
 
-    this.validateSchema();
+    const instance = JSON.parse(this.getText());
+    this.schemaErrors = this.schemaStore.validate(this.schemaUri, instance);
+  }
+
+  dependsOn(changedUri: string) {
+    if (this.schemaUri === undefined) {
+      return false;
+    }
+
+    const dependentSchemaUris = this.schemaStore.getDependentSchemaUris(this.schemaUri);
+
+    return dependentSchemaUris === undefined || dependentSchemaUris.has(changedUri);
   }
 
   get uri() {
@@ -64,33 +81,21 @@ export class JsonDocument implements TextDocument {
     return this.textDocument.lineCount;
   }
 
-  getText(range?: Range): string {
+  getText(range?: Range) {
     return this.textDocument.getText(range);
   }
 
-  positionAt(offset: number): Position {
+  positionAt(offset: number) {
     return this.textDocument.positionAt(offset);
   }
 
-  offsetAt(position: Position): number {
+  offsetAt(position: Position) {
     return this.textDocument.offsetAt(position);
   }
 
-  update(changes: TextDocumentContentChangeEvent[], version: number): void {
+  update(changes: TextDocumentContentChangeEvent[], version: number) {
     TextDocument.update(this.textDocument, changes, version);
     this.validate();
-  }
-
-  validateSchema() {
-    this.schemaErrors = undefined;
-
-    // validateSchema() is directly called from outside this class as well, so we need to check for parse errors here aswell
-    if (this.parseErrors.length > 0 || this.schemaUri === undefined) {
-      return;
-    }
-
-    const instance = JSON.parse(this.getText());
-    this.schemaErrors = this.schemaStore.validate(this.schemaUri, instance);
   }
 
   getParseErrors() {
@@ -99,31 +104,6 @@ export class JsonDocument implements TextDocument {
 
   getSchemaErrors() {
     return this.schemaErrors;
-  }
-
-  getSchemaUri() {
-    return this.schemaUri;
-  }
-
-  dependsOn(changedUris: Set<string>): boolean {
-    if (this.schemaUri === undefined) {
-      return false;
-    }
-
-    const dependentSchemaUris = this.schemaStore.getDependentSchemaUris(this.schemaUri);
-
-    if (dependentSchemaUris === undefined) {
-      return true;
-    }
-
-    // added this loop to prevent revalidation of every open document in the workspace tht would be revalidated on every file change
-    for (const uri of changedUris) {
-      if (dependentSchemaUris.has(uri)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   findNodeAtPointer(pointer: string) {
