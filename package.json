@@ -25,7 +25,7 @@
   "type": "module",
   "devDependencies": {
     "@stylistic/eslint-plugin": "*",
-    "@types/node": "",
+    "@types/node": "*",
     "oxlint": "*",
     "oxlint-tsgolint": "*",
     "typescript": "*",
