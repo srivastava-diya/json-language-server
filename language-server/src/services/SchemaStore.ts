@@ -26,37 +26,46 @@ export class SchemaStore {
   private server: Server;
   private workspace: Workspace;
   private compiledSchemaCache: Map<string, Promise<CompiledSchema>> = new Map();
-  private catalog: Promise<SchemaStoreEntry[] | undefined> = Promise.resolve(undefined);
+  private catalog: Promise<SchemaStoreEntry[]>;
 
   constructor(server: Server, workspace: Workspace) {
     this.server = server;
     this.workspace = workspace;
-
-    server.onInitialized(async () => {
-      const response = await fetch("https://www.schemastore.org/api/json/catalog.json");
-      this.catalog = response.json().then((data) => data.schemas);
-
-      const schemaAllowList = this.catalog.then((catalog) => {
-        return Pact.pipe(
-          catalog ?? [],
-          Pact.map((entry: { url: string }) => entry.url),
-          Pact.collectSet
-        );
-      });
-
-      const uriSchemePlugin: UriSchemePlugin = {
-        async retrieve(uri: string) {
-          if (!(await schemaAllowList).has(uri)) {
-            throw Error(`Only schemas in the SchemaStore.org registry can be retrieved over HTTP.`);
-          }
-
-          return httpSchemePlugin.retrieve(uri);
+    this.catalog = new Promise((resolve) => {
+      server.onInitialized(async () => {
+        const startTime = performance.now();
+        try {
+          const response = await fetch("https://www.schemastore.org/api/json/catalog.json");
+          const data = await response.json();
+          server.console.log(`SchemaStore.org catalog loaded (${(performance.now() - startTime).toFixed(2)}ms)`);
+          resolve(data.schemas);
+        } catch {
+          server.console.log(`Failed to load SchemaStore.org catalog (${(performance.now() - startTime).toFixed(2)}ms)`);
+          resolve([]);
         }
-      };
-
-      addUriSchemePlugin("http", uriSchemePlugin);
-      addUriSchemePlugin("https", uriSchemePlugin);
+      });
     });
+
+    const schemaAllowList = this.catalog.then((catalog) => {
+      return Pact.pipe(
+        catalog,
+        Pact.map((entry: { url: string }) => entry.url),
+        Pact.collectSet
+      );
+    });
+
+    const uriSchemePlugin: UriSchemePlugin = {
+      async retrieve(uri: string) {
+        if (!(await schemaAllowList).has(uri) && !uri.startsWith("https://json.schemastore.org")) {
+          throw Error(`Only schemas in the SchemaStore.org registry can be retrieved over HTTP.`);
+        }
+
+        return httpSchemePlugin.retrieve(uri);
+      }
+    };
+
+    addUriSchemePlugin("http", uriSchemePlugin);
+    addUriSchemePlugin("https", uriSchemePlugin);
 
     workspace.onDidChangeWatchedFiles(async (params) => {
       for (const change of params.changes) {
@@ -67,14 +76,9 @@ export class SchemaStore {
   }
 
   async getSchemaUri(fileUri: string) {
-    const catalog = await this.catalog;
-    if (!catalog) {
-      return;
-    }
-
     const filePath = fileURLToPath(fileUri);
 
-    for (const schema of catalog) {
+    for (const schema of await this.catalog) {
       const { fileMatch, url } = schema;
       if (!fileMatch) {
         continue;
