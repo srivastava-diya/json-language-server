@@ -2,12 +2,15 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile, getSchema } from "@hyperjump/json-schema/experimental";
 import { evaluateCompiledSchema } from "@hyperjump/json-schema-errors";
+import { addUriSchemePlugin, httpSchemePlugin } from "@hyperjump/browser";
 import { normalizeIri } from "@hyperjump/uri";
+import * as Pact from "@hyperjump/pact";
 import { abbreviateUri } from "../util/utils.ts";
 import { isMatch } from "picomatch";
 
 import type { CompiledSchema } from "@hyperjump/json-schema/experimental";
 import type { Json } from "@hyperjump/json-schema-errors";
+import type { UriSchemePlugin } from "@hyperjump/browser";
 import type { Server } from "../services/Server.ts";
 import type { Workspace } from "./Workspace.ts";
 
@@ -20,6 +23,29 @@ export class SchemaStore {
   constructor(server: Server, workspace: Workspace) {
     this.server = server;
     this.workspace = workspace;
+
+    server.onInitialized(async () => {
+      const schemaAllowList = Pact.pipe(
+        await this.getCatalog()
+          .then((c) => c ?? [])
+          .catch(() => []),
+        Pact.map((entry: { url: string }) => entry.url),
+        Pact.collectSet
+      );
+
+      const uriSchemePlugin: UriSchemePlugin = {
+        async retrieve(uri: string) {
+          if (!schemaAllowList.has(uri)) {
+            throw Error(`Only schemas in the SchemaStore.org registry can be retrieved over HTTP.`);
+          }
+
+          return httpSchemePlugin.retrieve(uri);
+        }
+      };
+
+      addUriSchemePlugin("http", uriSchemePlugin);
+      addUriSchemePlugin("https", uriSchemePlugin);
+    });
 
     workspace.onDidChangeWatchedFiles((params) => {
       for (const change of params.changes) {
