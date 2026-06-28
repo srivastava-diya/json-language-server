@@ -19,8 +19,10 @@
   "repository": "github:hyperjump-io/json-language-server",
   "keywords": [],
   "dependencies": {
+    "@hyperjump/browser": "^1.4.0",
     "@hyperjump/json-schema": "^1.17.6",
     "@hyperjump/json-schema-errors": "github:hyperjump-io/json-schema-errors",
+    "@hyperjump/pact": "^1.4.0",
     "jsonc-parser": "^3.3.1",
     "merge-anything": "^6.0.6",
     "picomatch": "^4.0.4",
