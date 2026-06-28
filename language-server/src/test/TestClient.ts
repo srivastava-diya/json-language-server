@@ -1,7 +1,7 @@
-import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { Duplex } from "node:stream";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ConfigurationRequest,
@@ -227,6 +227,7 @@ export class TestClient {
       .then(() => true)
       .catch(() => false);
 
+    await mkdir(dirname(fullUri.fsPath), { recursive: true });
     await writeFile(fullUri.fsPath, text, "utf-8");
 
     if (this.watchEnabled) {
