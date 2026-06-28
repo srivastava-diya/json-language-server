@@ -34,8 +34,6 @@ export class Diagnostics {
   }
 
   private async sendDiagnostics(document: JsonDocument) {
-    this.server.console.log(`send diagnostics for ${abbreviateUri(document.uri)}`);
-
     const diagnostics = [];
     for (const provider of this.providers) {
       diagnostics.push(...await provider.getDiagnostics(document));
@@ -45,6 +43,7 @@ export class Diagnostics {
       uri: document.uri,
       diagnostics: diagnostics
     });
+    this.server.console.log(`send diagnostics for ${abbreviateUri(document.uri)}`);
   }
 
   private async revalidateDependentDocuments(schemaUri: string) {
