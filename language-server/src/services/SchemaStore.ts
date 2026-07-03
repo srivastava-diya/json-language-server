@@ -91,7 +91,7 @@ export class SchemaStore {
             continue;
           }
 
-          if (isMatch(path.relative(workspacePath, filePath), pattern, { windows: true })) {
+          if (isMatch(pattern.includes("/") ? path.relative(workspacePath, filePath) : path.basename(filePath), pattern, { windows: true, basename: true })) {
             return url;
           }
         }

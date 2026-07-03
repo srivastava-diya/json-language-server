@@ -59,7 +59,7 @@ describe("Schema Store Tests", () => {
     await expect(diagnostics).resolves.toHaveLength(1);
   });
 
-  test("schemastore.org doesn't match file not at workspace root", async () => {
+  test("schemastore.org matches file not at workspace root when pattern has no slash", async () => {
     const diagnostics = new Promise<Diagnostic[]>((resolve) => {
       client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
         resolve(params.diagnostics);
@@ -69,7 +69,7 @@ describe("Schema Store Tests", () => {
     await client.writeDocument("sub-folder/fixture.json", `{ "foo": 42 }`);
     await client.openDocument("sub-folder/fixture.json");
 
-    await expect(diagnostics).resolves.toHaveLength(0);
+    await expect(diagnostics).resolves.toHaveLength(1);
   });
 
   test("schemastore.org match file anywhere in workspace", async () => {
