@@ -1,7 +1,7 @@
 import { TextDocumentContentChangeEvent } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import * as jsonc from "jsonc-parser";
-import { pointerSegments } from "@hyperjump/json-pointer";
+import { append, nil, pointerSegments } from "@hyperjump/json-pointer";
 import { resolveIri } from "@hyperjump/uri";
 import { SchemaStore } from "../services/SchemaStore.ts";
 import { Server } from "../services/Server.ts";
@@ -9,6 +9,7 @@ import { abbreviateUri } from "../util/utils.ts";
 
 import type { Position, Range } from "vscode-languageserver-textdocument";
 import type { ValidationResult } from "@hyperjump/json-schema-errors";
+import { MatchingSchemaCollector } from "../services/MatchingSchemaCollector.ts";
 
 export class JsonDocument implements TextDocument {
   private textDocument: TextDocument;
@@ -18,6 +19,7 @@ export class JsonDocument implements TextDocument {
   private parseErrors: jsonc.ParseError[] = [];
   private schemaErrors: Promise<ValidationResult | undefined> = Promise.resolve(undefined);
   private schemaUri: Promise<string | undefined> = Promise.resolve(undefined);
+  private matchingSchemaCollector = new MatchingSchemaCollector();
 
   constructor(textDocument: TextDocument, schemaStore: SchemaStore, server: Server) {
     this.textDocument = textDocument;
@@ -33,6 +35,7 @@ export class JsonDocument implements TextDocument {
     this.parseErrors = [];
     this.schemaErrors = Promise.resolve(undefined);
     this.schemaUri = Promise.resolve(undefined);
+    this.matchingSchemaCollector = new MatchingSchemaCollector();
 
     this.ast = jsonc.parseTree(this.textDocument.getText(), this.parseErrors);
 
@@ -61,7 +64,7 @@ export class JsonDocument implements TextDocument {
       }
 
       const instance = JSON.parse(this.getText());
-      return this.schemaStore.validate(schemaUri, instance, this.uri);
+      return this.schemaStore.validate(schemaUri, instance, this.uri, [this.matchingSchemaCollector]);
     });
   }
 
@@ -118,6 +121,10 @@ export class JsonDocument implements TextDocument {
     return this.schemaErrors;
   }
 
+  getMatchingSchemaCollector() {
+    return this.matchingSchemaCollector;
+  }
+
   findNodeAtPointer(pointer: string) {
     let node = this.ast;
 
@@ -131,5 +138,32 @@ export class JsonDocument implements TextDocument {
     }
 
     return node;
+  }
+
+  findNodeAtOffset(offset: number) {
+    if (!this.ast) {
+      return;
+    }
+    return jsonc.findNodeAtOffset(this.ast, offset);
+  }
+
+  getPointerForNode(node: jsonc.Node) {
+    const segments: string[] = [];
+
+    while (node.parent) {
+      if (node.parent.type === "property") {
+        const keyNode = node.parent.children![0];
+        segments.push(keyNode.value);
+        node = node.parent.parent!;
+      } else if (node.parent.type === "array") {
+        const index = node.parent.children!.indexOf(node);
+        segments.push(String(index));
+        node = node.parent;
+      } else {
+        node = node.parent;
+      }
+    }
+
+    return segments.reverse().reduce((pointer, segment) => append(segment, pointer), nil);
   }
 }

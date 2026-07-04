@@ -8,7 +8,7 @@ import * as Pact from "@hyperjump/pact";
 import ignore from "ignore";
 import { abbreviateUri } from "../util/utils.ts";
 
-import type { CompiledSchema } from "@hyperjump/json-schema/experimental";
+import type { CompiledSchema, EvaluationPlugin } from "@hyperjump/json-schema/experimental";
 import type { Json } from "@hyperjump/json-schema-errors";
 import type { UriSchemePlugin } from "@hyperjump/browser";
 import type { Server } from "../services/Server.ts";
@@ -99,7 +99,7 @@ export class SchemaStore {
     }
   }
 
-  async validate(schemaUri: string, instance: Json, instanceUri: string) {
+  async validate(schemaUri: string, instance: Json, instanceUri: string, plugins: EvaluationPlugin[] = []) {
     if (!this.compiledSchemaCache.has(schemaUri)) {
       this.compiledSchemaCache.set(schemaUri, (async function (server) {
         const startTime = performance.now();
@@ -112,7 +112,7 @@ export class SchemaStore {
 
     const compiledSchema = await this.compiledSchemaCache.get(schemaUri)!;
     const startTime = performance.now();
-    const result = evaluateCompiledSchema(compiledSchema, instance);
+    const result = evaluateCompiledSchema(compiledSchema, instance, { plugins });
     this.server.console.log(`validate ${abbreviateUri(instanceUri)} against schema ${abbreviateUri(schemaUri)} (${(performance.now() - startTime).toFixed(2)}ms)`);
     return result;
   }
