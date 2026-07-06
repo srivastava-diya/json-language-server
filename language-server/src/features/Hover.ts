@@ -5,12 +5,10 @@ import type { Server } from "../services/Server.ts";
 import type { ServerCapabilities } from "vscode-languageserver";
 
 export class Hover {
-  private server: Server;
-  private documents: JsonDocuments;
+  private jsonDocuments: JsonDocuments;
 
-  constructor(server: Server, documents: JsonDocuments) {
-    this.server = server;
-    this.documents = documents;
+  constructor(server: Server, jsonDocuments: JsonDocuments) {
+    this.jsonDocuments = jsonDocuments;
 
     server.onInitialize(() => {
       const serverCapabilities: ServerCapabilities = {
@@ -23,8 +21,8 @@ export class Hover {
     });
 
     server.onHover(async (params) => {
-      const document = this.documents.get(params.textDocument.uri)!;
-      const annotations = await document.getAnnotations(params.position);
+      const jsonDocument = this.jsonDocuments.get(params.textDocument.uri)!;
+      const annotations = await jsonDocument.getAnnotations(params.position);
 
       const lines: string[] = [];
       for (const annotation of annotations) {

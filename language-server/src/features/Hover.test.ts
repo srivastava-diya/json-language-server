@@ -50,11 +50,17 @@ describe("Hover", () => {
       position: { line: 2, character: 10 }
     });
 
-    expect(result?.contents).toMatchObject({
-      value: expect.stringContaining("Full Name")
-    });
-    expect(result?.contents).toMatchObject({
-      value: expect.stringContaining("The full name of the person.")
+    expect(result).toEqual({
+      contents: {
+        kind: "markdown",
+        value: `**Full Name**
+
+The full name of the person.
+
+---
+
+_hyperjump-json-language-server_`
+      }
     });
   });
 
@@ -126,8 +132,15 @@ describe("Hover", () => {
       position: { line: 2, character: 12 }
     });
 
-    expect(result?.contents).toMatchObject({
-      value: expect.stringContaining("Status")
+    expect(result).toEqual({
+      contents: {
+        kind: "markdown",
+        value: `**Status**
+
+---
+
+_hyperjump-json-language-server_`
+      }
     });
   });
 
@@ -159,8 +172,15 @@ describe("Hover", () => {
       position: { line: 2, character: 12 }
     });
 
-    expect(result?.contents).toMatchObject({
-      value: expect.stringContaining("This is the Status")
+    expect(result).toEqual({
+      contents: {
+        kind: "markdown",
+        value: `This is the Status
+
+---
+
+_hyperjump-json-language-server_`
+      }
     });
   });
 
@@ -206,8 +226,8 @@ describe("Hover", () => {
     }`);
 
     await client.writeDocument("instance.json", `{
-    "$schema": "${fixtureSchemaUri}",
-    "value": 90
+      "$schema": "${fixtureSchemaUri}",
+      "value": 90
     }`);
     const uri = await client.openDocument("instance.json");
 
@@ -218,16 +238,18 @@ describe("Hover", () => {
       position: { line: 2, character: 10 }
     });
 
-    expect(result).toEqual({ contents: {
-      kind: "markdown",
-      value: `**Big number**
+    expect(result).toEqual({
+      contents: {
+        kind: "markdown",
+        value: `**Big number**
 
 i am a big number
 
 ---
 
 _hyperjump-json-language-server_`
-    } });
+      }
+    });
   });
 
   test("Hover should return all annotations if multiple are applicable at an instanceLocation", async () => {
@@ -260,8 +282,8 @@ _hyperjump-json-language-server_`
     );
 
     await client.writeDocument("instance.json", `{
-    "$schema": "${fixtureSchemaUri}",
-    "value": 90
+      "$schema": "${fixtureSchemaUri}",
+      "value": 90
     }`);
     const uri = await client.openDocument("instance.json");
 
@@ -272,9 +294,10 @@ _hyperjump-json-language-server_`
       position: { line: 2, character: 10 }
     });
 
-    expect(result).toEqual({ contents: {
-      kind: "markdown",
-      value: `**Big number**
+    expect(result).toEqual({
+      contents: {
+        kind: "markdown",
+        value: `**Big number**
 
 i am a big number
 
@@ -285,7 +308,8 @@ i am a number
 ---
 
 _hyperjump-json-language-server_`
-    } });
+      }
+    });
   });
 
   test("if schema fails as a whole but a sub-schema passes then hover should return annotations for passing sub-schemas", async () => {
@@ -324,13 +348,15 @@ _hyperjump-json-language-server_`
       position: { line: 2, character: 10 }
     });
 
-    expect(result).toEqual({ contents: {
-      kind: "markdown",
-      value: `**A Number**
+    expect(result).toEqual({
+      contents: {
+        kind: "markdown",
+        value: `**A Number**
 
 ---
 
 _hyperjump-json-language-server_`
-    } });
+      }
+    });
   });
 });

@@ -1,15 +1,15 @@
 import { TextDocumentContentChangeEvent } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import * as jsonc from "jsonc-parser";
-import { append, nil, pointerSegments } from "@hyperjump/json-pointer";
+import * as JsonPointer from "@hyperjump/json-pointer";
 import { resolveIri } from "@hyperjump/uri";
 import { SchemaStore } from "../services/SchemaStore.ts";
 import { Server } from "../services/Server.ts";
+import { MatchingSchemaCollector } from "../services/MatchingSchemaCollector.ts";
 import { abbreviateUri } from "../util/utils.ts";
 
 import type { Position, Range } from "vscode-languageserver-textdocument";
 import type { ValidationResult } from "@hyperjump/json-schema-errors";
-import { MatchingSchemaCollector } from "../services/MatchingSchemaCollector.ts";
 
 export class JsonDocument implements TextDocument {
   private textDocument: TextDocument;
@@ -121,14 +121,10 @@ export class JsonDocument implements TextDocument {
     return this.schemaErrors;
   }
 
-  getMatchingSchemaCollector() {
-    return this.matchingSchemaCollector;
-  }
-
   findNodeAtPointer(pointer: string) {
     let node = this.ast;
 
-    for (let segment of pointerSegments(pointer)) {
+    for (let segment of JsonPointer.pointerSegments(pointer)) {
       if (!node) {
         return;
       }
@@ -138,13 +134,6 @@ export class JsonDocument implements TextDocument {
     }
 
     return node;
-  }
-
-  private findNodeAtOffset(offset: number) {
-    if (!this.ast) {
-      return;
-    }
-    return jsonc.findNodeAtOffset(this.ast, offset);
   }
 
   private getPointerForNode(node: jsonc.Node) {
@@ -164,13 +153,18 @@ export class JsonDocument implements TextDocument {
       }
     }
 
-    return segments.reduce((pointer, segment) => append(segment, pointer), nil);
+    return segments.reduce((pointer, segment) => JsonPointer.append(segment, pointer), JsonPointer.nil);
   }
 
   async getAnnotations(position: Position) {
-    const offset = this.offsetAt(position);
-    const node = this.findNodeAtOffset(offset);
+    if (!this.ast) {
+      return [];
+    }
 
+    const offset = this.offsetAt(position);
+    const node = jsonc.findNodeAtOffset(this.ast, offset);
+
+    // Wait for schema validation to complete and populate annotation results
     await this.schemaErrors;
 
     const pointer = this.getPointerForNode(node!);
