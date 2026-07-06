@@ -1,34 +1,47 @@
-import * as Instance from "@hyperjump/json-schema/instance/experimental";
-
-import type { EvaluationPlugin } from "@hyperjump/json-schema/experimental";
+import type { EvaluationPlugin, ValidationContext } from "@hyperjump/json-schema/experimental";
 import type { JsonNode } from "@hyperjump/json-schema/instance/experimental";
+import type { Node, Keyword } from "@hyperjump/json-schema/experimental";
+
+type Annotation = Record<string, unknown>;
+
+type SchemaAnnotationContext = ValidationContext & {
+  pendingAnnotation?: Annotation;
+};
 
 export class MatchingSchemaCollector implements EvaluationPlugin {
-  private schemas: Map<string, { title?: string; description?: string }>;
+  private annotations: Map<string, Annotation[]> = new Map();
 
-  constructor() {
-    this.schemas = new Map();
+  beforeSchema(_url: string, _instance: JsonNode, context: SchemaAnnotationContext): void {
+    context.pendingAnnotation = {};
   }
 
-  afterKeyword(node: [string, string, unknown], instance: JsonNode): void {
+  afterKeyword(node: Node<unknown>, instance: JsonNode, context: SchemaAnnotationContext, valid: boolean, schemaContext: SchemaAnnotationContext, keyword: Keyword<unknown>): void {
+    if (!valid) {
+      return;
+    }
+
     const [keywordId, , keywordValue] = node;
-    const instanceUri = Instance.uri(instance);
-    const hashIndex = instanceUri.indexOf("#");
-    const instanceLocation = hashIndex === -1 ? "" : instanceUri.slice(hashIndex + 1);
 
-    if (!this.schemas.has(instanceLocation)) {
-      this.schemas.set(instanceLocation, {});
-    }
-
-    const entry = this.schemas.get(instanceLocation)!;
-    if (keywordId.endsWith("/title")) {
-      entry.title = keywordValue as string;
-    } else if (keywordId.endsWith("/description")) {
-      entry.description = keywordValue as string;
+    if (keyword.annotation) {
+      schemaContext.pendingAnnotation ??= {};
+      schemaContext.pendingAnnotation[keywordId] = keyword.annotation(keywordValue, instance, context);
     }
   }
 
-  getAnnotations(instanceLocation: string): { title?: string; description?: string } | undefined {
-    return this.schemas.get(instanceLocation);
+  afterSchema(_schemaUri: string, instance: JsonNode, context: SchemaAnnotationContext, valid: boolean): void {
+    const annotation = context.pendingAnnotation;
+
+    if (!valid || !annotation) {
+      return;
+    }
+
+    const instanceLocation = instance.pointer;
+    const existing = this.annotations.get(instanceLocation) ?? [];
+    existing.push(annotation);
+    this.annotations.set(instanceLocation, existing);
+  }
+
+  getAnnotations(instanceLocation: string): Annotation[] {
+    return this.annotations.get(instanceLocation) ?? [];
   }
 }

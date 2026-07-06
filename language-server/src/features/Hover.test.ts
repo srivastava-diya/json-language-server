@@ -50,7 +50,6 @@ describe("Hover", () => {
       position: { line: 2, character: 10 }
     });
 
-    expect(result).not.toBeNull();
     expect(result?.contents).toMatchObject({
       value: expect.stringContaining("Full Name")
     });
@@ -127,9 +126,41 @@ describe("Hover", () => {
       position: { line: 2, character: 12 }
     });
 
-    expect(result).not.toBeNull();
     expect(result?.contents).toMatchObject({
       value: expect.stringContaining("Status")
+    });
+  });
+
+  test("should return only description when title is absent", async () => {
+    const diagnostics = new Promise<void>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", () => {
+        resolve();
+      });
+    });
+
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "status": {
+          "description": "This is the Status",
+          "type": "string"
+        }
+      }
+    }`);
+
+    await client.writeDocument("instance.json", `{\n  "$schema": "${fixtureSchemaUri}",\n  "status": "active"\n}`);
+    const uri = await client.openDocument("instance.json");
+
+    await diagnostics;
+
+    const result = await client.sendRequest(HoverRequest.type, {
+      textDocument: { uri },
+      position: { line: 2, character: 12 }
+    });
+
+    expect(result?.contents).toMatchObject({
+      value: expect.stringContaining("This is the Status")
     });
   });
 
@@ -143,5 +174,168 @@ describe("Hover", () => {
     });
 
     expect(result).toBeNull();
+  });
+
+  test("Hover should drop annotations for failing schemas", async () => {
+    const diagnostics = new Promise<void>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", () => {
+        resolve();
+      });
+    });
+
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number",
+          "oneOf": [
+            {
+              "minimum": 50,
+              "title": "Big number",
+              "description": "i am a big number"
+            },
+            {
+              "maximum": 10,
+              "title": "Small number",
+              "description": " i am a small number"
+            }
+          ]
+        }
+      }
+    }`);
+
+    await client.writeDocument("instance.json", `{
+    "$schema": "${fixtureSchemaUri}",
+    "value": 90
+    }`
+    );
+    const uri = await client.openDocument("instance.json");
+
+    await diagnostics;
+
+    const result = await client.sendRequest(HoverRequest.type, {
+      textDocument: { uri },
+      position: { line: 2, character: 10}
+    });
+
+    expect(result).toEqual({
+      "contents": {
+        "kind": "markdown",
+        "value": `**Big number**
+
+i am a big number
+
+---
+
+_hyperjump-json-language-server_`,
+      }});
+  });
+
+  test("Hover should return all annotations if multiple are applicable at an instanceLocation", async () => {
+    const diagnostics = new Promise<void>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", () => {
+        resolve();
+      });
+    });
+
+    fixtureSchemaUri = await client.writeDocument(
+      "schema.json",
+      `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number",
+          "title": "Number",
+          "description": "i am a number",
+          "allOf": [
+            {
+              "minimum": 50,
+              "title": "Big number",
+              "description": "i am a big number"
+            }
+          ]
+        }
+      }
+    }`,
+    );
+
+    await client.writeDocument("instance.json", `{
+    "$schema": "${fixtureSchemaUri}",
+    "value": 90
+    }`
+    );
+    const uri = await client.openDocument("instance.json");
+
+    await diagnostics;
+
+    const result = await client.sendRequest(HoverRequest.type, {
+      textDocument: { uri },
+      position: { line: 2, character: 10}
+    });
+
+    expect(result).toEqual({
+      "contents": {
+        "kind": "markdown",
+        "value": `**Big number**
+
+i am a big number
+
+**Number**
+
+i am a number
+
+---
+
+_hyperjump-json-language-server_`,
+      }});
+  });
+
+  test("if schema fails as a whole but a sub-schema passes then hover should return annotations for passing sub-schemas", async () => {
+    const diagnostics = new Promise<void>((resolve) => {
+      client.onNotification("textDocument/publishDiagnostics", () => {
+        resolve();
+      });
+    });
+
+    fixtureSchemaUri = await client.writeDocument("schema.json", `{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "value1": {
+          "type": "number",
+          "title": "A Number"
+        },
+        "value2": {
+          "type": "string",
+          "title": "A string"
+        }
+      }
+    }`);
+
+    await client.writeDocument("instance.json", `{
+      "$schema": "${fixtureSchemaUri}",
+      "value1": 90,
+      "value2": 90
+    }`);
+    const uri = await client.openDocument("instance.json");
+
+    await diagnostics;
+
+    const result = await client.sendRequest(HoverRequest.type, {
+      textDocument: { uri },
+      position: { line: 2, character: 10 }
+    });
+
+    expect(result).toEqual({
+      "contents": {
+        "kind": "markdown",
+        "value": `**A Number**
+
+---
+
+_hyperjump-json-language-server_`,
+      }});
   });
 });

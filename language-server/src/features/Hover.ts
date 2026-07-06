@@ -23,33 +23,17 @@ export class Hover {
     });
 
     server.onHover(async (params) => {
-      const document = this.documents.get(params.textDocument.uri);
-      if (!document) {
-        return null;
-      }
-
-      const offset = document.offsetAt(params.position);
-
-      const node = document.findNodeAtOffset(offset);
-      if (!node) {
-        return null;
-      }
-
-      await document.getSchemaErrors();
-      const pointer = document.getPointerForNode(node);
-      const annotations = document.getMatchingSchemaCollector().getAnnotations(pointer);
-      if (!annotations?.title && !annotations?.description) {
-        return null;
-      }
+      const document = this.documents.get(params.textDocument.uri)!;
+      const annotations = await document.getAnnotations(params.position);
 
       const lines: string[] = [];
-
-      if (annotations.title) {
-        lines.push(`**${annotations.title}**`);
-      }
-
-      if (annotations.description) {
-        lines.push(`${annotations.description}`);
+      for (const annotation of annotations) {
+        if (annotation["https://json-schema.org/keyword/title"]) {
+          lines.push(`**${annotation["https://json-schema.org/keyword/title"]}**`);
+        }
+        if (annotation["https://json-schema.org/keyword/description"]) {
+          lines.push(`${annotation["https://json-schema.org/keyword/description"]}`);
+        }
       }
 
       if (lines.length === 0) {

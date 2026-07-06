@@ -125,7 +125,7 @@ export class JsonDocument implements TextDocument {
     return this.matchingSchemaCollector;
   }
 
-  findNodeAtPointer(pointer: string) {
+  private findNodeAtPointer(pointer: string) {
     let node = this.ast;
 
     for (let segment of pointerSegments(pointer)) {
@@ -140,30 +140,40 @@ export class JsonDocument implements TextDocument {
     return node;
   }
 
-  findNodeAtOffset(offset: number) {
+  private findNodeAtOffset(offset: number) {
     if (!this.ast) {
       return;
     }
     return jsonc.findNodeAtOffset(this.ast, offset);
   }
 
-  getPointerForNode(node: jsonc.Node) {
+  private getPointerForNode(node: jsonc.Node) {
     const segments: string[] = [];
 
-    while (node.parent) {
+    while (node?.parent) {
       if (node.parent.type === "property") {
         const keyNode = node.parent.children![0];
-        segments.push(keyNode.value);
+        segments.unshift(keyNode.value);
         node = node.parent.parent!;
       } else if (node.parent.type === "array") {
         const index = node.parent.children!.indexOf(node);
-        segments.push(String(index));
+        segments.unshift(String(index));
         node = node.parent;
       } else {
         node = node.parent;
       }
     }
 
-    return segments.reverse().reduce((pointer, segment) => append(segment, pointer), nil);
+    return segments.reduce((pointer, segment) => append(segment, pointer), nil);
+  }
+
+  async getAnnotations(position: Position) {
+    const offset = this.offsetAt(position);
+    const node = this.findNodeAtOffset(offset);
+
+    await this.schemaErrors;
+
+    const pointer = this.getPointerForNode(node!);
+    return this.matchingSchemaCollector.getAnnotations(pointer);
   }
 }
