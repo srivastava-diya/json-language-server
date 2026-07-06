@@ -125,7 +125,7 @@ export class JsonDocument implements TextDocument {
     return this.matchingSchemaCollector;
   }
 
-  private findNodeAtPointer(pointer: string) {
+  findNodeAtPointer(pointer: string) {
     let node = this.ast;
 
     for (let segment of pointerSegments(pointer)) {

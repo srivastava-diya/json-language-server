@@ -208,28 +208,26 @@ describe("Hover", () => {
     await client.writeDocument("instance.json", `{
     "$schema": "${fixtureSchemaUri}",
     "value": 90
-    }`
-    );
+    }`);
     const uri = await client.openDocument("instance.json");
 
     await diagnostics;
 
     const result = await client.sendRequest(HoverRequest.type, {
       textDocument: { uri },
-      position: { line: 2, character: 10}
+      position: { line: 2, character: 10 }
     });
 
-    expect(result).toEqual({
-      "contents": {
-        "kind": "markdown",
-        "value": `**Big number**
+    expect(result).toEqual({ contents: {
+      kind: "markdown",
+      value: `**Big number**
 
 i am a big number
 
 ---
 
-_hyperjump-json-language-server_`,
-      }});
+_hyperjump-json-language-server_`
+    } });
   });
 
   test("Hover should return all annotations if multiple are applicable at an instanceLocation", async () => {
@@ -258,27 +256,25 @@ _hyperjump-json-language-server_`,
           ]
         }
       }
-    }`,
+    }`
     );
 
     await client.writeDocument("instance.json", `{
     "$schema": "${fixtureSchemaUri}",
     "value": 90
-    }`
-    );
+    }`);
     const uri = await client.openDocument("instance.json");
 
     await diagnostics;
 
     const result = await client.sendRequest(HoverRequest.type, {
       textDocument: { uri },
-      position: { line: 2, character: 10}
+      position: { line: 2, character: 10 }
     });
 
-    expect(result).toEqual({
-      "contents": {
-        "kind": "markdown",
-        "value": `**Big number**
+    expect(result).toEqual({ contents: {
+      kind: "markdown",
+      value: `**Big number**
 
 i am a big number
 
@@ -288,8 +284,8 @@ i am a number
 
 ---
 
-_hyperjump-json-language-server_`,
-      }});
+_hyperjump-json-language-server_`
+    } });
   });
 
   test("if schema fails as a whole but a sub-schema passes then hover should return annotations for passing sub-schemas", async () => {
@@ -328,14 +324,13 @@ _hyperjump-json-language-server_`,
       position: { line: 2, character: 10 }
     });
 
-    expect(result).toEqual({
-      "contents": {
-        "kind": "markdown",
-        "value": `**A Number**
+    expect(result).toEqual({ contents: {
+      kind: "markdown",
+      value: `**A Number**
 
 ---
 
-_hyperjump-json-language-server_`,
-      }});
+_hyperjump-json-language-server_`
+    } });
   });
 });

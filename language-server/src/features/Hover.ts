@@ -29,10 +29,10 @@ export class Hover {
       const lines: string[] = [];
       for (const annotation of annotations) {
         if (annotation["https://json-schema.org/keyword/title"]) {
-          lines.push(`**${annotation["https://json-schema.org/keyword/title"]}**`);
+          lines.push(`**${annotation["https://json-schema.org/keyword/title"] as string}**`);
         }
         if (annotation["https://json-schema.org/keyword/description"]) {
-          lines.push(`${annotation["https://json-schema.org/keyword/description"]}`);
+          lines.push(`${annotation["https://json-schema.org/keyword/description"] as string}`);
         }
       }
 
