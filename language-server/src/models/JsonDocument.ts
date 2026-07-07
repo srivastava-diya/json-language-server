@@ -1,10 +1,11 @@
 import { TextDocumentContentChangeEvent } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import * as jsonc from "jsonc-parser";
-import { pointerSegments } from "@hyperjump/json-pointer";
+import * as JsonPointer from "@hyperjump/json-pointer";
 import { resolveIri } from "@hyperjump/uri";
 import { SchemaStore } from "../services/SchemaStore.ts";
 import { Server } from "../services/Server.ts";
+import { MatchingSchemaCollector } from "../services/MatchingSchemaCollector.ts";
 import { abbreviateUri } from "../util/utils.ts";
 
 import type { Position, Range } from "vscode-languageserver-textdocument";
@@ -18,6 +19,7 @@ export class JsonDocument implements TextDocument {
   private parseErrors: jsonc.ParseError[] = [];
   private schemaErrors: Promise<ValidationResult | undefined> = Promise.resolve(undefined);
   private schemaUri: Promise<string | undefined> = Promise.resolve(undefined);
+  private matchingSchemaCollector = new MatchingSchemaCollector();
 
   constructor(textDocument: TextDocument, schemaStore: SchemaStore, server: Server) {
     this.textDocument = textDocument;
@@ -33,6 +35,7 @@ export class JsonDocument implements TextDocument {
     this.parseErrors = [];
     this.schemaErrors = Promise.resolve(undefined);
     this.schemaUri = Promise.resolve(undefined);
+    this.matchingSchemaCollector = new MatchingSchemaCollector();
 
     this.ast = jsonc.parseTree(this.textDocument.getText(), this.parseErrors);
 
@@ -61,7 +64,7 @@ export class JsonDocument implements TextDocument {
       }
 
       const instance = JSON.parse(this.getText());
-      return this.schemaStore.validate(schemaUri, instance, this.uri);
+      return this.schemaStore.validate(schemaUri, instance, this.uri, [this.matchingSchemaCollector]);
     });
   }
 
@@ -121,7 +124,7 @@ export class JsonDocument implements TextDocument {
   findNodeAtPointer(pointer: string) {
     let node = this.ast;
 
-    for (let segment of pointerSegments(pointer)) {
+    for (let segment of JsonPointer.pointerSegments(pointer)) {
       if (!node) {
         return;
       }
@@ -131,5 +134,40 @@ export class JsonDocument implements TextDocument {
     }
 
     return node;
+  }
+
+  private getPointerForNode(node: jsonc.Node) {
+    const segments: string[] = [];
+
+    while (node?.parent) {
+      if (node.parent.type === "property") {
+        const keyNode = node.parent.children![0];
+        segments.unshift(keyNode.value);
+        node = node.parent.parent!;
+      } else if (node.parent.type === "array") {
+        const index = node.parent.children!.indexOf(node);
+        segments.unshift(String(index));
+        node = node.parent;
+      } else {
+        node = node.parent;
+      }
+    }
+
+    return segments.reduce((pointer, segment) => JsonPointer.append(segment, pointer), JsonPointer.nil);
+  }
+
+  async getAnnotations(position: Position) {
+    if (!this.ast) {
+      return [];
+    }
+
+    const offset = this.offsetAt(position);
+    const node = jsonc.findNodeAtOffset(this.ast, offset);
+
+    // Wait for schema validation to complete and populate annotation results
+    await this.schemaErrors;
+
+    const pointer = this.getPointerForNode(node!);
+    return this.matchingSchemaCollector.getAnnotations(pointer);
   }
 }

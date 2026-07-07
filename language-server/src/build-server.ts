@@ -8,6 +8,7 @@ import { SchemaValidation } from "./features/SchemaValidation.ts";
 import { Formatting } from "./features/Formatting.ts";
 import { addMediaTypePlugin, removeUriSchemePlugin } from "@hyperjump/browser";
 import { buildSchemaDocument } from "@hyperjump/json-schema/experimental";
+import { Hover } from "./features/Hover.ts";
 
 import "@hyperjump/json-schema/draft-2020-12";
 import "@hyperjump/json-schema/draft-2019-09";
@@ -45,6 +46,7 @@ export const buildServer = (connection: Connection): Connection => {
   ]);
 
   new Formatting(server, documents);
+  new Hover(server, documents);
 
   return server;
 };
