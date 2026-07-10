@@ -1,7 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { TestClient } from "../test/TestClient.ts";
+import { PublishDiagnosticsNotification } from "vscode-languageserver";
 
-import type { Diagnostic, PublishDiagnosticsParams } from "vscode-languageserver";
+import type { Diagnostic } from "vscode-languageserver";
 
 describe("Schema Store Tests", () => {
   let client: TestClient;
@@ -57,8 +58,8 @@ describe("Schema Store Tests", () => {
   // Anywhere pattern
 
   test("schemastore.org anywhere pattern at workspace root", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -70,8 +71,8 @@ describe("Schema Store Tests", () => {
   });
 
   test("schemastore.org anywhere pattern not at workspace root", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -85,8 +86,8 @@ describe("Schema Store Tests", () => {
   // Explict-anywhere pattern
 
   test("schemastore.org explict-anywhere pattern at workspace root", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -98,8 +99,8 @@ describe("Schema Store Tests", () => {
   });
 
   test("schemastore.org explict-anywhere pattern not at workspace root", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -113,8 +114,8 @@ describe("Schema Store Tests", () => {
   // Root-only pattern
 
   test("schemastore.org root-only pattern at workspace root", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -126,8 +127,8 @@ describe("Schema Store Tests", () => {
   });
 
   test("schemastore.org root-only pattern not at workspace root", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -141,8 +142,8 @@ describe("Schema Store Tests", () => {
   // Sub-folder pattern
 
   test("schemastore.org sub-folder pattern at workspace root", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -154,8 +155,8 @@ describe("Schema Store Tests", () => {
   });
 
   test("schemastore.org sub-folder pattern not at workspace root", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -169,8 +170,8 @@ describe("Schema Store Tests", () => {
   // Wildcard pattern
 
   test("schemastore.org wildcard pattern at workspace root", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -182,8 +183,8 @@ describe("Schema Store Tests", () => {
   });
 
   test("schemastore.org wildcard pattern deep folders", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -197,8 +198,8 @@ describe("Schema Store Tests", () => {
   // Double-wildcard pattern
 
   test("schemastore.org double-wildcard pattern deep folders", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -212,8 +213,8 @@ describe("Schema Store Tests", () => {
   // Complex pattern
 
   test("schemastore.org complex pattern", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -227,8 +228,8 @@ describe("Schema Store Tests", () => {
   // $schema conflict
 
   test("schemastore.org match and $schema", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
