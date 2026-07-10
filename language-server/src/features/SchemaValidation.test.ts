@@ -3,7 +3,7 @@ import { PublishDiagnosticsNotification } from "vscode-languageserver";
 import { TestClient } from "../test/TestClient.ts";
 import { unregisterSchema } from "@hyperjump/json-schema";
 
-import type { Diagnostic, PublishDiagnosticsParams } from "vscode-languageserver";
+import type { Diagnostic } from "vscode-languageserver";
 
 describe("Schema Validation", () => {
   let client: TestClient;
@@ -23,8 +23,8 @@ describe("Schema Validation", () => {
   });
 
   test("JSON Validation using Hyperjump - Valid Case", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -49,8 +49,8 @@ describe("Schema Validation", () => {
   });
 
   test("JSON Validation using Hyperjump - Invalid Case", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -78,8 +78,8 @@ describe("Schema Validation", () => {
   });
 
   test("schema validation is skipped if the JSON is invalid", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -104,8 +104,8 @@ describe("Schema Validation", () => {
   });
 
   test("JSON Validation using Hyperjump - anyOf Formatting Case", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -139,8 +139,8 @@ describe("Schema Validation", () => {
   });
 
   test("JSON Validation using Hyperjump - oneOf Formatting Case", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -174,8 +174,8 @@ describe("Schema Validation", () => {
   });
 
   test("JSON Validation using Hyperjump - property name with slash (escape sequence)", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -200,8 +200,8 @@ describe("Schema Validation", () => {
   });
 
   test("property key that looks like a number should not be treated like one - object case", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -226,8 +226,8 @@ describe("Schema Validation", () => {
   });
 
   test("URI encoded characters in pointer are decoded correctly", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -252,8 +252,8 @@ describe("Schema Validation", () => {
   });
 
   test("numeric segment in array should be treated as array index", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -281,8 +281,8 @@ describe("Schema Validation", () => {
   });
 
   test("after fixing schema validation errors, it should not return a diagnostic", async () => {
-    const initialValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const initialValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -305,8 +305,8 @@ describe("Schema Validation", () => {
 
     await expect(initialValidation).resolves.toHaveLength(1);
 
-    const secondValidation = new Promise((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params) => {
+    const secondValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -321,8 +321,8 @@ describe("Schema Validation", () => {
   });
 
   test("changing the schema should invalidate the cache", async () => {
-    const initialValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const initialValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -345,8 +345,8 @@ describe("Schema Validation", () => {
 
     await expect(initialValidation).resolves.toHaveLength(1);
 
-    const secondValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params) => {
+    const secondValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         if (params.uri === instanceUri) {
           resolve(params.diagnostics);
         }
@@ -366,8 +366,8 @@ describe("Schema Validation", () => {
   });
 
   test("changing a referenced schema revalidates dependents", async () => {
-    const initialValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const initialValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -393,8 +393,8 @@ describe("Schema Validation", () => {
 
     await expect(initialValidation).resolves.toHaveLength(1);
 
-    const secondValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params) => {
+    const secondValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         if (params.uri === instanceUri) {
           resolve(params.diagnostics);
         }
@@ -410,8 +410,8 @@ describe("Schema Validation", () => {
   });
 
   test("JSON Validation using Hyperjump - Relative $schema case", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -436,8 +436,8 @@ describe("Schema Validation", () => {
   });
 
   test("changing a watched file should not revalidate documents with no $schema", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -447,7 +447,7 @@ describe("Schema Validation", () => {
     await diagnostics;
 
     let revalidated = false;
-    client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    client.onNotification(PublishDiagnosticsNotification.type, (params) => {
       if (params.uri === plainUri) {
         revalidated = true;
       }
@@ -476,8 +476,8 @@ describe("Schema Validation", () => {
     }`);
 
     // Inital validation has a schema error
-    const initialValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const initialValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         if (params.uri === instanceUri) {
           resolve(params.diagnostics);
         }
@@ -487,8 +487,8 @@ describe("Schema Validation", () => {
     await expect(initialValidation).resolves.to.toHaveLength(1);
 
     // Introduce syntax error
-    const secondValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const secondValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         if (params.uri === instanceUri) {
           resolve(params.diagnostics);
         }
@@ -516,8 +516,8 @@ describe("Schema Validation", () => {
     }`);
 
     // Inital validation has a schema error
-    const initialValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const initialValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         if (params.uri === instanceUri) {
           resolve(params.diagnostics);
         }
@@ -527,8 +527,8 @@ describe("Schema Validation", () => {
     await expect(initialValidation).resolves.to.toHaveLength(1);
 
     // Remove $schema
-    const secondValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const secondValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         if (params.uri === instanceUri) {
           resolve(params.diagnostics);
         }
@@ -555,8 +555,8 @@ describe("Schema Validation", () => {
     }`);
 
     // Inital validation has a schema error
-    const initialValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const initialValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         if (params.uri === instanceUri) {
           resolve(params.diagnostics);
         }
@@ -566,8 +566,8 @@ describe("Schema Validation", () => {
     await expect(initialValidation).resolves.to.toHaveLength(1);
 
     // Introducing a schema error should reset schema errors on dependent instances
-    const secondValidation = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const secondValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         if (params.uri === instanceUri) {
           resolve(params.diagnostics);
         }
@@ -654,8 +654,8 @@ describe("Schema Validation", () => {
   });
 
   test("$schema points to an invalid schema", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -690,8 +690,8 @@ describe("Schema Validation", () => {
   });
 
   test("$schema points to a schema that doesn't exist", async () => {
-    const diagnostics = new Promise<Diagnostic[]>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params: PublishDiagnosticsParams) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });

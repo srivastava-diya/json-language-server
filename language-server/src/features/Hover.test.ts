@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
-import { HoverRequest } from "vscode-languageserver";
+import { HoverRequest, PublishDiagnosticsNotification } from "vscode-languageserver";
 import { TestClient } from "../test/TestClient.ts";
 import { unregisterSchema } from "@hyperjump/json-schema";
 
@@ -21,8 +21,8 @@ describe("Hover", () => {
   });
 
   test("should return title and description on hover over a property value", async () => {
-    const diagnostics = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", () => {
+    const diagnostics: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, () => {
         resolve();
       });
     });
@@ -77,8 +77,8 @@ _hyperjump-json-language-server_`
   });
 
   test("should return null on hover over a property with no title or description", async () => {
-    const diagnostics = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", () => {
+    const diagnostics: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, () => {
         resolve();
       });
     });
@@ -105,8 +105,8 @@ _hyperjump-json-language-server_`
   });
 
   test("should return only title when description is absent", async () => {
-    const diagnostics = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", () => {
+    const diagnostics: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, () => {
         resolve();
       });
     });
@@ -145,8 +145,8 @@ _hyperjump-json-language-server_`
   });
 
   test("should return only description when title is absent", async () => {
-    const diagnostics = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", () => {
+    const diagnostics: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, () => {
         resolve();
       });
     });
@@ -197,8 +197,8 @@ _hyperjump-json-language-server_`
   });
 
   test("Hover should drop annotations for failing schemas", async () => {
-    const diagnostics = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", () => {
+    const diagnostics: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, () => {
         resolve();
       });
     });
@@ -253,8 +253,8 @@ _hyperjump-json-language-server_`
   });
 
   test("Hover should return all annotations if multiple are applicable at an instanceLocation", async () => {
-    const diagnostics = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", () => {
+    const diagnostics: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, () => {
         resolve();
       });
     });
@@ -313,8 +313,8 @@ _hyperjump-json-language-server_`
   });
 
   test("should not duplicate annotations when the referenced schema is edited while the instance stays open", async () => {
-    const initialValidation = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", () => {
+    const initialValidation: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, () => {
         resolve();
       });
     });
@@ -336,8 +336,8 @@ _hyperjump-json-language-server_`
 
     await initialValidation;
 
-    const secondValidation = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params) => {
+    const secondValidation: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         if (params.uri === uri) {
           resolve();
         }
@@ -378,8 +378,8 @@ _hyperjump-json-language-server_`
   });
 
   test("if schema fails as a whole but a sub-schema passes then hover should return annotations for passing sub-schemas", async () => {
-    const diagnostics = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", () => {
+    const diagnostics: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, () => {
         resolve();
       });
     });
@@ -426,8 +426,8 @@ _hyperjump-json-language-server_`
   });
 
   test("hover with an invalid schema", async () => {
-    const diagnostics = new Promise<void>((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", () => {
+    const diagnostics: Promise<void> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, () => {
         resolve();
       });
     });

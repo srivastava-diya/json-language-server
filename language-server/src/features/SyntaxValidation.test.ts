@@ -1,5 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { TestClient } from "../test/TestClient.ts";
+import { PublishDiagnosticsNotification } from "vscode-languageserver";
+
+import type { Diagnostic } from "vscode-languageserver";
 
 describe("Syntax Validation", () => {
   let client: TestClient;
@@ -14,8 +17,8 @@ describe("Syntax Validation", () => {
   });
 
   test("invalid JSON syntax returns a diagnostic", async () => {
-    const diagnostics = new Promise((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -27,8 +30,8 @@ describe("Syntax Validation", () => {
   });
 
   test("valid JSON Syntax should not return a diagnostic", async () => {
-    const diagnostics = new Promise((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params) => {
+    const diagnostics: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -40,8 +43,8 @@ describe("Syntax Validation", () => {
   });
 
   test("after fixing invalid JSON Syntax, it should not return a diagnostic", async () => {
-    const initialValidation = new Promise((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params) => {
+    const initialValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
@@ -51,8 +54,8 @@ describe("Syntax Validation", () => {
 
     await expect(initialValidation).resolves.toHaveLength(1);
 
-    const secondValidation = new Promise((resolve) => {
-      client.onNotification("textDocument/publishDiagnostics", (params) => {
+    const secondValidation: Promise<Diagnostic[]> = new Promise((resolve) => {
+      client.onNotification(PublishDiagnosticsNotification.type, (params) => {
         resolve(params.diagnostics);
       });
     });
