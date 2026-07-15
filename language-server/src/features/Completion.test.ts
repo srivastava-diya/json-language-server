@@ -122,7 +122,7 @@ describe("Completions", () => {
     expect(completions).toEqual([
       { label: "street", kind: CompletionItemKind.Property },
       { label: "city", kind: CompletionItemKind.Property },
-      { label: "zipCode", kind: CompletionItemKind.Property },
+      { label: "zipCode", kind: CompletionItemKind.Property }
     ]);
   });
 });
