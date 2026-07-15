@@ -16,11 +16,12 @@ export class MatchingSchemaCollector implements EvaluationPlugin {
   }
 
   afterKeyword(node: Node<unknown>, instance: JsonNode, context: SchemaAnnotationContext, valid: boolean, schemaContext: SchemaAnnotationContext, keyword: Keyword<unknown>): void {
-    if (!valid) {
-      return;
-    }
-
     const [keywordId, , keywordValue] = node;
+
+    if (keywordId === "https://json-schema.org/keyword/properties") {
+      schemaContext.pendingAnnotations ??= {};
+      schemaContext.pendingAnnotations[keywordId] = Object.keys(keywordValue as object);
+    }
 
     if (keyword.annotation) {
       schemaContext.pendingAnnotations ??= {};
