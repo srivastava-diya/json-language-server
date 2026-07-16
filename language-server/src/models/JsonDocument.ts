@@ -161,6 +161,13 @@ export class JsonDocument implements TextDocument {
     return this.matchingSchemaCollector.getAnnotations(pointer);
   }
 
+  async getPropertyNames(node: jsonc.Node) {
+    await this.schemaErrors;
+
+    const pointer = this.getPointerForNode(node);
+    return this.matchingSchemaCollector.getPropertyNames(pointer);
+  }
+
   findNodeAtPosition(position: Position) {
     if (!this.ast) {
       return;

@@ -20,26 +20,30 @@ export class Completion {
 
     server.onCompletion(async (params) => {
       const document = jsonDocuments.get(params.textDocument.uri)!;
-      const propertyNode = document.findNodeAtPosition(params.position)!;
-      const objectNode = propertyNode.parent!;
-
-      const annotations = await document.getAnnotations(objectNode);
-
-      const completions: CompletionItem[] = [];
-      for (const annotation of annotations) {
-        if (!("https://json-schema.org/keyword/properties" in annotation)) {
-          continue;
-        }
-
-        for (const propertyName of annotation["https://json-schema.org/keyword/properties"] as string[]) {
-          completions.push({
-            label: propertyName,
-            kind: CompletionItemKind.Property
-          });
-        }
+      const keyNode = document.findNodeAtPosition(params.position);
+      const propertyNode = keyNode?.parent;
+      const objectNode = propertyNode?.parent;
+      if (!objectNode) {
+        return [];
       }
 
-      return completions;
+      const isAtPropertyKey = propertyNode?.type === "property" && propertyNode.children?.[0] === keyNode;
+      if (!isAtPropertyKey) {
+        return [];
+      }
+
+      const propertyNames = await document.getPropertyNames(objectNode);
+
+      const existingKeys = new Set(
+        (objectNode.children ?? [])
+          .filter((property) => property !== propertyNode)
+          .map((property) => property.children?.[0]?.value as string)
+      );
+
+      return [...propertyNames.difference(existingKeys)].map((propertyName): CompletionItem => ({
+        label: propertyName,
+        kind: CompletionItemKind.Property
+      }));
     });
   }
 }
